@@ -2,24 +2,123 @@ import streamlit as st
 import datetime
 import pandas as pd
 
-# ڕێکخستنی شێوازی پیشاندانی لاپەڕەکە بە شێوەی شاهانە
+# 1. ڕێکخستنی سەرەتایی لاپەڕەکە
 st.set_page_config(
-    page_title="سیستمی شاهانەی بەڕێوەبردن",
+    page_title="سەنتەری شاهانە | VIP",
     page_icon="👑",
     layout="wide"
 )
 
-# زانیارییە سەرەکییەکانی سەنتەرەکە
-CENTER_NAME = "سەنتەری شاهانە"
-PHONE = "07701234567"
-INSTAGRAM = "@Nayab_Center"
+# 2. لێدانی دەرزی جادوویی CSS بۆ دروستکردنی ستایلی جیهانی و تاریکی Zedflix
+st.markdown("""
+    <style>
+    /* پشتخلفانی تاریکی قووڵ */
+    .stApp {
+        background: radial-gradient(circle, #12131a 0%, #08080c 100%) !important;
+        color: #e2e8f0 !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* مینیووی لای چەپ (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #0c0d12 !important;
+        border-right: 1px solid rgba(212, 175, 55, 0.15) !important;
+    }
+    
+    /* کارتی شووشەیی لۆگین (Glassmorphism) */
+    .login-container {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(212, 175, 55, 0.25) !important;
+        border-radius: 20px !important;
+        padding: 40px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 20px rgba(212, 175, 55, 0.1) !important;
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    /* خانەکانی نووسین (Input Fields) */
+    div[data-baseweb="input"] {
+        background-color: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease !important;
+    }
+    div[data-baseweb="input"]:focus-within {
+        border-color: #D4AF37 !important; /* درەوشانەوەی ئاڵتوونی لە کاتی نووسیندا */
+        box-shadow: 0 0 12px rgba(212, 175, 55, 0.4) !important;
+    }
+    
+    /* سێلێکت بۆکسەکان */
+    div[data-baseweb="select"] {
+        background-color: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* دوگمە مۆدێرن و شازەکان */
+    .stButton>button {
+        background: linear-gradient(135deg, #D4AF37 0%, #AA7C11 100%) !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 12px 24px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2) !important;
+        text-transform: uppercase;
+        width: 100%;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4) !important;
+    }
+    .stButton>button:active {
+        transform: translateY(1px) !important;
+    }
+    
+    /* تابەکانی سەرەوە (Tabs) */
+    button[data-baseweb="tab"] {
+        color: #888 !important;
+        font-size: 16px !important;
+        transition: all 0.3s ease !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #D4AF37 !important;
+        border-bottom-color: #D4AF37 !important;
+        font-weight: bold !important;
+    }
+    
+    /* کارتەکانی نیشاندانی داهات (Metrics) */
+    div[data-testid="stMetricValue"] {
+        color: #D4AF37 !important;
+        font-weight: bold !important;
+        font-size: 28px !important;
+    }
+    div[data-testid="metric-container"] {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* نازناوە گرنگەکان */
+    .neon-title {
+        color: #D4AF37;
+        text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        font-weight: bold;
+        text-align: center;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# دڵنیابوونەوە لە بوونی داتاکان لە ناو مێشک (session_state)ی ئەپەکەدا
+# 3. جێگیرکردنی داتاکان لە ناو مێشکدا
 if "users" not in st.session_state:
     st.session_state.users = {
         "admin@gmail.com": {"password": "admin123", "name": "خاوەن کار (هاوڕێ)", "role": "admin", "expire": datetime.date(2027, 12, 31)},
-        "barber1@gmail.com": {"password": "123", "name": "سەنتەری هاوڕێ", "role": "user", "expire": datetime.date(2026, 8, 16)},
-        "barber2@gmail.com": {"password": "456", "name": "سەنتەری نازە", "role": "user", "expire": datetime.date(2026, 7, 20)}
+        "barber1@gmail.com": {"password": "123", "name": "سەنتەری هاوڕێ", "role": "user", "expire": datetime.date(2026, 8, 16)}
     }
 
 if "services" not in st.session_state:
@@ -27,8 +126,7 @@ if "services" not in st.session_state:
         "قژ تاشینی مۆدێرن": 15000,
         "تاشینی ڕیش و ڕێکخستن": 10000,
         "پاککردنەوەی پێست (فەیشەڵ)": 25000,
-        "سێشوار و مۆدێل": 8000,
-        "کۆمبۆی شاهانە (هەمووی)": 45000
+        "سێشوار و مۆدێل": 8000
     }
 
 if "orders" not in st.session_state:
@@ -41,209 +139,120 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.current_user = None
 
-# ----------------- (لاپەڕەی لۆگین - Login Page) -----------------
+# ==========================================
+# لاپەڕەی لۆگین (ستایلی زۆر شاز و تاریکی VIP)
+# ==========================================
 if not st.session_state.logged_in:
-    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>👑 سەنتەری شاهانە 👑</h1>", unsafe_allow_html=True)
-    st.markdown("<h4 style='text-align: center; color: #888;'>سیستمی پێشکەوتووی بەڕێوەبردنی بەشداری کڕیاران و سەنتەرەکان</h4>", unsafe_allow_html=True)
-    st.write("---")
+    col1, col2, col3 = st.columns([1, 1.8, 1])
     
-    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        email = st.text_input("ئیمەیڵەکەت بنووسە:").strip().lower()
-        password = st.text_input("پاسوۆردەکەت بنووسە:", type="password").strip()
+        st.markdown("""
+            <div class="login-container">
+                <h1 style="color: #D4AF37; font-size: 45px; margin-bottom: 5px; text-shadow: 0 0 15px rgba(212,175,55,0.4);">👑</h1>
+                <h2 style="color: #ffffff; font-weight: 800; margin-top: 0px;">سەنتەری شاهانە</h2>
+                <p style="color: #8892b0; font-size: 14px; margin-bottom: 30px;">پلاتفۆرمی مۆدێرن بۆ بەڕێوەبردنی کارەکان بە شێوەی جیهانی</p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("چوونەژوورەوە 🔑", use_container_width=True):
+        # دروستکردنی کێڵگەکان لە خوارەوەی کارتەکە بە ڕێکی
+        email = st.text_input("📧 ئیمەیڵەکەت بنووسە:").strip().lower()
+        password = st.text_input("🔑 پاسوۆردەکەت بنووسە:", type="password").strip()
+        
+        st.write("")
+        if st.button("چوونەژوورەوە بۆ سەر تەخت 👑", use_container_width=True):
             if email in st.session_state.users:
                 user_data = st.session_state.users[email]
                 if user_data["password"] == password:
-                    today = datetime.date.today()
-                    if today <= user_data["expire"]:
-                        st.session_state.logged_in = True
-                        st.session_state.current_user = email
-                        st.success(f"بەخێربێیت بەڕێز {user_data['name']}!")
-                        st.rerun()
-                    else:
-                        st.error("❌ ماوەی اشتراکی مانگانەکەت بەسەرچووە! تکایە نوێی بکەرەوە.")
+                    st.session_state.logged_in = True
+                    st.session_state.current_user = email
+                    st.success(f"بەخێربێیت بەڕێز {user_data['name']}!")
+                    st.rerun()
                 else:
                     st.error("❌ پاسوۆردەکەت هەڵەیە!")
             else:
                 st.error("❌ ئەم ئیمەیڵە تۆمار نەکراوە!")
-        
-        st.info(f"📞 بۆ کڕینی بەشداری مانگانە پەیوەندی بکە بە: {PHONE}")
 
+# ==========================================
+# دوای لۆگینبوون (ناو ماڵپەڕەکە)
+# ==========================================
 else:
     user_info = st.session_state.users[st.session_state.current_user]
     
-    # ----------------- مینیووی لای چەپ (Sidebar) -----------------
-    st.sidebar.markdown(f"### 👑 {user_info['name']}")
-    st.sidebar.write(f"**ڕۆڵ:** {user_info['role'].capitalize()}")
-    st.sidebar.write(f"**بەسەرچوون:** {user_info['expire']}")
+    # مینیووی لای چەپ
+    st.sidebar.markdown(f"<h2 class='neon-title'>👑 {user_info['name']}</h2>", unsafe_allow_html=True)
+    st.sidebar.write(f"**پلە:** {user_info['role'].upper()}")
+    st.sidebar.write(f"**ئیشتراک تا:** {user_info['expire']}")
+    st.sidebar.write("---")
     
     if st.sidebar.button("چوونەدەرەوە 🚪", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.current_user = None
         st.rerun()
-        
-    st.sidebar.write("---")
-    st.sidebar.write(f"📍 {CENTER_NAME}")
-    st.sidebar.write(f"📸 Instagram: {INSTAGRAM}")
 
-    # =========================================================================
-    # 1. پانێڵی بەڕێوەبەر (Admin View)
-    # =========================================================================
+    # ئەگەر ئەدمین بێت
     if user_info["role"] == "admin":
-        st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛡️ پانێڵی سەرەکی خاوەن کار (Admin)</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='neon-title'>🛡️ مەکۆی سەرەکی بەڕێوەبردن</h1>", unsafe_allow_html=True)
         st.write("---")
         
-        # دروستکردنی تابەکان بۆ ڕێکخستنی گەورەی سایتەکە
-        tab_dashboard, tab_users, tab_services, tab_finances = st.tabs([
-            "📈 داشبۆرد و ڕاپۆرتەکان", 
-            "👥 بەڕێوەبردنی بەشداربووان", 
-            "✂️ خزمەتگوزارییەکان", 
-            "💸 حیسابات و خەرجییەکان"
-        ])
+        tab_dashboard, tab_users, tab_services = st.tabs(["📊 کورتەی دۆخی دارایی", "👥 بەشداربووان", "✂️ خزمەتگوزارییەکان"])
         
-        # --- TAB 1: DASHBOARD ---
         with tab_dashboard:
-            st.subheader("📊 کورتەی دۆخی دارایی و کارەکان")
-            
-            # حیسابکردنی ئامارەکان
             total_sales = sum(o["price"] for o in st.session_state.orders)
-            total_expenses = sum(e["amount"] for e in st.session_state.expenses)
-            net_profit = total_sales - total_expenses
-            total_customers = len(st.session_state.orders)
-            
-            # پیشاندانی کارتە سەرنجڕاکێشەکان
-            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-            col_s1.metric("💰 کۆی گشتی داهات", f"{total_sales:,} دینار")
-            col_s2.metric("📉 کۆی خەرجییەکان", f"{total_expenses:,} دینار", delta_color="inverse")
-            col_s3.metric("💎 قازانجی پاک", f"{net_profit:,} دینار")
-            col_s4.metric("👥 ژمارەی کڕیارەکان", f"{total_customers} کڕیار")
+            st.write("")
+            col_m1, col_m2 = st.columns(2)
+            col_m1.metric("💰 کۆی داهات", f"{total_sales:,} دینار")
+            col_m2.metric("👥 ژمارەی کڕیارەکان", f"{len(st.session_state.orders)} کڕیار")
             
             st.write("---")
-            st.subheader("📈 هێڵکاری فرۆشتنی سەرتاشەکان")
-            
             if st.session_state.orders:
-                df_orders = pd.DataFrame(st.session_state.orders)
-                # دروستکردنی چارتی فرۆشتن بەپێی سەرتاش
-                df_barber_sales = df_orders.groupby("barber")["price"].sum().reset_index()
-                st.bar_chart(df_barber_sales.set_index("barber"))
-                
-                st.subheader("📋 لیستی نۆرەکانی ئەمڕۆ لە سەرانسەری سەنتەرەکان")
-                st.dataframe(df_orders[["time", "customer_name", "barber", "service", "price"]], use_container_width=True)
+                st.subheader("📋 نۆرەکانی ئەمڕۆ")
+                df = pd.DataFrame(st.session_state.orders)
+                st.dataframe(df[["time", "customer_name", "barber", "service", "price"]], use_container_width=True)
             else:
-                st.info("هیچ نۆرەیەک بۆ ئەمڕۆ تۆمار نەکراوە.")
+                st.info("هیچ کارێک بۆ ئەمڕۆ تۆمار نەکراوە.")
                 
-        # --- TAB 2: MANAGE USERS ---
         with tab_users:
-            st.subheader("👥 لیستی بەشداربووانی چالاک")
-            for u_email, u_data in st.session_state.users.items():
-                if u_data["role"] != "admin":
-                    st.write(f"🔹 **{u_data['name']}** ({u_email}) - چالاکە تا: {u_data['expire']}")
-            
-            st.write("---")
-            st.subheader("➕ زیادکردن یان نوێکردنەوەی بەشداربوو")
-            
-            new_email = st.text_input("ئیمەیڵی کڕیار/سەرتاش:").strip().lower()
-            new_name = st.text_input("ناوی سەنتەر/کارمەند:")
-            new_pass = st.text_input("پاسوۆردی کاتی:", type="password")
-            days = st.number_input("چەند ڕۆژی بۆ دابنێیت؟", min_value=1, value=30)
-            
-            if st.button("تۆمارکردن و چالاککردن ✅", use_container_width=True):
+            st.subheader("👥 زیادکردنی بەشداربووی نوێ")
+            new_email = st.text_input("ئیمەیڵ:")
+            new_name = st.text_input("ناو:")
+            new_pass = st.text_input("پاسوۆرد:", type="password")
+            if st.button("تۆمارکردن ✅"):
                 if new_email and new_name and new_pass:
-                    expire_date = datetime.date.today() + datetime.timedelta(days=days)
                     st.session_state.users[new_email] = {
                         "password": new_pass,
                         "name": new_name,
                         "role": "user",
-                        "expire": expire_date
+                        "expire": datetime.date.today() + datetime.timedelta(days=30)
                     }
-                    st.success(f"🎉 سەنتەری '{new_name}' بە سەرکەوتوویی تۆمارکرا یان نوێکرایەوە تا: {expire_date}")
+                    st.success("بە سەرکەوتوویی تۆمارکرا!")
                     st.rerun()
-                else:
-                    st.warning("تکایە هەموو خانەکان پڕ بکەرەوە!")
 
-        # --- TAB 3: MANAGE SERVICES ---
-        with tab_users:
-            pass # (ڕێگریکردن لە دووبارەبوونەوە)
-            
         with tab_services:
-            st.subheader("✂️ بەڕێوەبردنی خزمەتگوزارییەکان و نرخەکان")
-            
-            # پیشاندانی خزمەتگوزارییەکان
-            col_l, col_r = st.columns(2)
-            with col_l:
-                st.markdown("### 📋 لیست و نرخی ئێستا:")
-                for ser, price in st.session_state.services.items():
-                    st.write(f"• **{ser}**: {price:,} دینار")
-                    
-            with col_r:
-                st.markdown("### ➕ زیادکردنی خزمەتگوزاری نوێ:")
-                new_ser_name = st.text_input("ناوی خزمەتگوزاری نوێ:")
-                new_ser_price = st.number_input("نرخی کارەکە (دینار):", min_value=500, step=500, value=10000)
-                
-                if st.button("تۆمارکردنی خزمەتگوزاری 💾", use_container_width=True):
-                    if new_ser_name:
-                        st.session_state.services[new_ser_name] = new_ser_price
-                        st.success(f"خزمەتگوزاری '{new_ser_name}' بە نرخی {new_ser_price:,} دینار زیادکرا!")
-                        st.rerun()
+            st.subheader("✂️ خزمەتگوزاری نوێ")
+            s_name = st.text_input("ناوی خزمەتگوزاری:")
+            s_price = st.number_input("نرخەکەی (دینار):", min_value=500, step=500)
+            if st.button("پاشەکەوتکردن 💾"):
+                if s_name:
+                    st.session_state.services[s_name] = s_price
+                    st.success("زیادکرا!")
+                    st.rerun()
 
-        # --- TAB 4: FINANCES & EXPENSES ---
-        with tab_finances:
-            st.subheader("💸 تۆمارکردنی خەرجییەکانی سەنتەر")
-            
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                exp_title = st.text_input("بابەتی خەرجی (بۆ نموونە: کرێ، مەواد، کارەبا):")
-                exp_amount = st.number_input("بڕی پارەی خەرجکراو (دینار):", min_value=500, step=500, value=5000)
-                if st.button("تۆمارکردنی خەرجی ➖", use_container_width=True):
-                    if exp_title:
-                        st.session_state.expenses.append({
-                            "title": exp_title,
-                            "amount": exp_amount,
-                            "date": datetime.date.today().strftime("%Y-%m-%d")
-                        })
-                        st.success("خەرجییەکە بە سەرکەوتوویی تۆمارکرا!")
-                        st.rerun()
-            
-            with col_f2:
-                st.markdown("### 📊 لیستی خەرجییەکانی ئەمڕۆ:")
-                if st.session_state.expenses:
-                    df_exp = pd.DataFrame(st.session_state.expenses)
-                    st.dataframe(df_exp, use_container_width=True)
-                else:
-                    st.info("هیچ خەرجییەک تۆمار نەکراوە.")
-
-    # =========================================================================
-    # 2. پانێڵی بەکارهێنەر/سەرتاش (User/Barber View)
-    # =========================================================================
+    # ئەگەر سەرتاش یان سەنتەر بێت
     else:
-        st.markdown(f"<h1 style='text-align: center; color: #D4AF37;'>💇‍♂️ بەخێربێیت بۆ پانێڵی {user_info['name']}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 class='neon-title'>💇‍♂️ {user_info['name']}</h1>", unsafe_allow_html=True)
         st.write("---")
         
-        tab_order, tab_today = st.tabs(["📝 تۆمارکردنی نۆرە", "📊 داتاکانی ئەمڕۆ"])
+        tab_order, tab_today = st.tabs(["📝 تۆمارکردنی نۆرە", "📊 کارەکانی ئەمڕۆ"])
         
-        # --- TAB 1: ADD ORDER ---
         with tab_order:
-            st.subheader("👤 زانیاری کڕیار تۆمار بکە:")
-            
             cust_name = st.text_input("ناوی کڕیار:")
             gender = st.selectbox("ڕەگەز:", ["کوڕ", "کچ"])
-            
-            # کێشانی خزمەتگوزارییەکان لە لیستەکەوە
-            service_list = list(st.session_state.services.keys())
-            selected_service = st.selectbox("خزمەتگوزاری:", service_list)
-            
-            # پیشاندانی نرخ بە شێوەی خۆکار بەپێی خزمەتگوزارییەکە
+            selected_service = st.selectbox("خزمەتگوزاری:", list(st.session_state.services.keys()))
             price = st.session_state.services[selected_service]
-            st.info(f"💵 نرخی ئەم کارە: {price:,} دینار")
             
-            # سیستمی ڕێژەی سەرتاش (Commission)
-            commission_pct = st.slider("٪ ڕێژەی قازانجی سەرتاش لەم کارەدا:", min_value=0, max_value=100, value=50)
-            barber_profit = (price * commission_pct) / 100
-            st.write(f"💰 قازانجی سەرتاش: **{barber_profit:,} دینار** | پشکی سەنتەر: **{price - barber_profit:,} دینار**")
+            st.markdown(f"<h3>💵 نرخی ئەم کارە: <span style='color:#D4AF37;'>{price:,} دینار</span></h3>", unsafe_allow_html=True)
             
-            if st.button("➕ تۆمارکردنی نۆرە", use_container_width=True):
+            if st.button("➕ نۆرەکە تۆمار بکە"):
                 if cust_name:
                     now_time = datetime.datetime.now().strftime("%I:%M %p")
                     st.session_state.orders.append({
@@ -252,31 +261,18 @@ else:
                         "gender": gender,
                         "service": selected_service,
                         "price": price,
-                        "barber": user_info["name"],
-                        "barber_profit": barber_profit
+                        "barber": user_info["name"]
                     })
-                    st.success(f"🎉 نۆرەی ژمارە {len(st.session_state.orders)} بۆ کڕیار {cust_name} بە سەرکەوتوویی تۆمارکرا!")
+                    st.success(f"نۆرەی {cust_name} بە سەرکەوتوویی تۆمارکرا!")
                     st.rerun()
                 else:
                     st.warning("تکایە ناوی کڕیار بنووسە!")
                     
-        # --- TAB 2: TODAY'S DATA ---
         with tab_today:
-            # پاڵاوتنی تەنها ئەو نۆرانەی هی ئەم سەرتاشە خۆیەتی
             my_orders = [o for o in st.session_state.orders if o["barber"] == user_info["name"]]
-            
             if my_orders:
-                my_total_sales = sum(o["price"] for o in my_orders)
-                my_total_profit = sum(o["barber_profit"] for o in my_orders)
-                
-                col_b1, col_b2, col_b3 = st.columns(3)
-                col_b1.metric("💰 کۆی گشتی کارەکانت", f"{my_total_sales:,} دینار")
-                col_b2.metric("💸 پشکی قازانجی تۆ", f"{my_total_profit:,} دینار")
-                col_b3.metric("👥 ژمارەی کڕیارەکانت", f"{len(my_orders)} کڕیار")
-                
+                st.metric("💰 کۆی کارەکانت", f"{sum(o['price'] for o in my_orders):,} دینار")
                 st.write("---")
-                st.subheader("📋 نۆرەکانی تۆ لەمڕۆدا:")
-                df_my_orders = pd.DataFrame(my_orders)
-                st.dataframe(df_my_orders[["time", "customer_name", "gender", "service", "price", "barber_profit"]], use_container_width=True)
+                st.dataframe(pd.DataFrame(my_orders)[["time", "customer_name", "service", "price"]], use_container_width=True)
             else:
-                st.info("تۆ هێشتا هیچ نۆرەیەکت بۆ ئەمڕۆ تۆمار نەکردووە.")
+                st.info("هیچ نۆرەیەکت تۆمار نەکردووە.")
