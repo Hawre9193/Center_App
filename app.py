@@ -81,7 +81,8 @@ st.markdown("""
 # ========================================================
 # ٢. بەستنەوەی داتابەیسی SQLite هەمیشەیی
 # ========================================================
-conn = sqlite3.connect("royal_core_ultimate.db", check_same_thread=False)
+# زیادکردنی timeout بۆ ڕێگریکردن لە کێشەی قفڵبوونی داتابەیس بەهۆی زۆری هاتوچۆوە
+conn = sqlite3.connect("royal_core_ultimate.db", check_same_thread=False, timeout=10)
 cursor = conn.cursor()
 
 # دروستکردنی خشتە پڕۆفیشناڵەکان
@@ -129,6 +130,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_date TEXT,
     booking_time TEXT,
     status TEXT DEFAULT 'Pending',
+    product_price REAL DEFAULT 0.0,
     FOREIGN KEY(merchant_id) REFERENCES merchants(id),
     FOREIGN KEY(staff_id) REFERENCES staff(id)
 )
@@ -387,14 +389,21 @@ if menu_choice == T["home"]:
                             b_date = st.date_input("ڕۆژ دیاری بکە:", min_value=datetime.date.today())
                             b_time = st.time_input("کاتژمێر:")
                             
+                            # کڕیار دەتوانێت جۆری خزمەتگوزارییەکەی هەڵبژێرێت بۆ ئەوەی نرخەکەی دیاری بکرێت
+                            cursor.execute("SELECT name, price FROM products WHERE merchant_id = ?", (merchant[0],))
+                            merchant_prods = cursor.fetchall()
+                            prod_options = {f"{p[0]} ({p[1]:,} IQD)": p[1] for p in merchant_prods} if merchant_prods else {"خزمەتگوزاری سەرەکی (10,000 IQD)": 10000.0}
+                            sel_prod = st.selectbox("خزمەتگوزاری دیاریکراو:", options=list(prod_options.keys()))
+                            
                             submitted_booking = st.form_submit_button("تۆمارکردن")
                             if submitted_booking:
                                 if c_name and c_phone:
                                     s_id = staff_options[sel_staff]
+                                    chosen_price = prod_options[sel_prod]
                                     cursor.execute("""
-                                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time)
-                                        VALUES (?, ?, ?, ?, ?, ?)
-                                    """, (merchant[0], c_name, c_phone, s_id, b_date.isoformat(), b_time.isoformat()))
+                                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time, product_price)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    """, (merchant[0], c_name, c_phone, s_id, b_date.isoformat(), b_time.isoformat(), chosen_price))
                                     conn.commit()
                                     st.success("نۆرەکەت بە سەرکەوتوویی تۆمارکرا! 🎉")
                                 else:
@@ -443,7 +452,7 @@ elif menu_choice == T["shop"]:
     
     # هێنانەوەی تەواوی بەرهەمەکان کە لە لایەن بازرگانانەوە زیادکراون بەپێی جۆری پیشەکەیان
     cursor.execute("""
-        SELECT m.business_name, p.name, p.price, p.description, p.img_url 
+        SELECT m.business_name, p.name, p.price, p.description, p.img_url, m.id 
         FROM products p 
         JOIN merchants m ON p.merchant_id = m.id 
         WHERE m.business_type = ?
@@ -466,7 +475,13 @@ elif menu_choice == T["shop"]:
                     </div>
                 """, unsafe_allow_html=True)
                 if st.button(T["quick_order"], key=f"buy_p_{idx}"):
-                    st.success(f"داواکاریت بۆ {prod[1]} بە سەرکەوتوویی نێردرا! 📞")
+                    # تۆمارکردنی کڕینەکان وەک نۆرەیەکی کڕین لە بەستەری بازاڕدا
+                    cursor.execute("""
+                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time, status, product_price)
+                        VALUES (?, 'کڕیاری بازاڕ', 'دیاری نەکراوە', 0, ?, 'کڕینی ڕاستەوخۆ', 'Confirmed', ?)
+                    """, (prod[5], datetime.date.today().isoformat(), prod[2]))
+                    conn.commit()
+                    st.success(f"داواکاریت بۆ {prod[1]} بە سەرکەوتوویی نێردرا و تۆمارکرا! 📞")
 
 # ========================================================
 # 📢 داواکردنی ڕیکلام (Ad Portal)
@@ -530,12 +545,15 @@ elif menu_choice == T["login_btn"]:
                 b_name = st.text_input("ناوی پڕۆژە / کارەکەت:")
                 o_name = st.text_input("ناوی خاوەن کار:")
                 b_type = st.selectbox("بزنسەکەت سەر بە کام بەشەیە؟", ["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare"])
-                b_email = st.text_input("📧 ئیمەیڵی فەرمی:")
+                b_email = st.text_input("📧 ئیمەیڵی فەرمی:").strip().lower()
                 b_pass = st.text_input("🔑 پاسۆردی نهێنی:", type="password")
                 
                 submitted_reg = st.form_submit_button("دروستکردنی ئەکاونتی نوێ")
                 if submitted_reg:
-                    if b_name and b_email and b_pass:
+                    # ڕێگریکردن لە ناونووسینی ناوی تاقیکاری ئادمین بۆ پاراستنی هاک نەبوونی سیستەمەکە
+                    if b_email == "admin@gmail.com":
+                        st.error("مۆڵەت پێنەدراوە ئەم ئیمەیڵە بەکاربهێنرێت!")
+                    elif b_name and b_email and b_pass:
                         try:
                             cursor.execute("""
                                 INSERT INTO merchants (business_name, owner_name, business_type, email, password)
@@ -625,7 +643,7 @@ elif menu_choice == T["login_btn"]:
                 if "Barber" in b_type or "Pharmacy" in b_type:
                     st.subheader("📅 خشتەی کار و کاتی نۆرەکانی دەستی کڕیارانت")
                     cursor.execute("""
-                        SELECT b.id, b.customer_name, b.customer_phone, s.staff_name, b.booking_date, b.booking_time, b.status 
+                        SELECT b.id, b.customer_name, b.customer_phone, s.staff_name, b.booking_date, b.booking_time, b.status, b.product_price 
                         FROM bookings b LEFT JOIN staff s ON b.staff_id = s.id 
                         WHERE b.merchant_id = ?
                     """, (st.session_state.user_id,))
@@ -639,6 +657,7 @@ elif menu_choice == T["login_btn"]:
                                 <div class="main-card">
                                     <h4>👤 کڕیار: {b[1]} ({b[2]})</h4>
                                     <p>کارمەندی دیاریکراو: <b>{b[3] if b[3] else "دیاری نەکراوە"}</b></p>
+                                    <p>💵 نرخی هەڵبژێردراو: {b[7]:,} IQD</p>
                                     <p>📅 کات و بەروار: {b[4]} | کاتژمێر {b[5]} | دۆخ: <b>{b[6]}</b></p>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -713,22 +732,21 @@ elif menu_choice == T["login_btn"]:
             with tab_finance:
                 st.subheader("💰 حیساباتی سەرتاشەکان و دابەشبوونی داهات")
                 
-                # لۆجیکی تایبەت بە حیسابکردنی داهاتی دەلاکەکان و سەنتەر
-                if "Barber" in b_type:
-                    st.write("لێرەدا دەتوانیت بەپێی نۆرە پشتڕاستکراوەکان داهاتی کۆی دەلاکەکان و کۆمسیۆنی پلاتفۆرمی شاهانە بزانیت:")
-                    cursor.execute("SELECT COUNT(id) FROM bookings WHERE merchant_id = ? AND status = 'Confirmed'", (st.session_state.user_id,))
-                    confirmed_count = cursor.fetchone()[0] or 0
+                # دۆزینەوەی کۆی داهاتی ڕاستەقینە بەپێی نۆرە و کڕینە پشتڕاستکراوەکان لە داتابەیس
+                if "Barber" in b_type or "General" in b_type or "Pharmacy" in b_type:
+                    st.write("داهاتی فەرمی بازرگانەکە لە پلاتفۆرمی شاهانەدا بەپێی کۆی فرۆش و نۆرەکان:")
                     
-                    # وەک گریمانەیەک نرخی هەر نۆرەیەک بە ۱۰,۰۰۰ دینار دادەنێین
-                    total_revenue = confirmed_count * 10000
+                    cursor.execute("SELECT SUM(product_price) FROM bookings WHERE merchant_id = ? AND status = 'Confirmed'", (st.session_state.user_id,))
+                    total_revenue = cursor.fetchone()[0] or 0.0
+                    
                     platform_share = total_revenue * (comm_rate / 100.0)
                     staff_and_shop_share = total_revenue - platform_share
                     
                     col_f1, col_f2, col_f3 = st.columns(3)
                     with col_f1:
-                        st.metric("کۆی داهاتی گشتی (گریمانەیی)", f"{total_revenue:,} IQD")
+                        st.metric("داهاتی گشتی ڕاستەقینە", f"{total_revenue:,} IQD")
                     with col_f2:
-                        st.metric(f"پشکی سەنتەری شاهانە (%{comm_rate})", f"{platform_share:,} IQD")
+                        st.metric(f"کۆمسیۆنی شاهانە (%{comm_rate})", f"{platform_share:,} IQD")
                     with col_f3:
                         st.metric("پشکی ماوەی ساڵۆن و کارمەند", f"{staff_and_shop_share:,} IQD")
                 else:
