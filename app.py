@@ -51,7 +51,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
     .product-box {
-        background: rgba(255, 255, 255, 0.01) !important;
+        background: rgba(255, 255, 255, 0.02) !important;
         border: 1px solid rgba(212, 175, 55, 0.1) !important;
         border-radius: 12px !important;
         padding: 15px !important;
@@ -61,7 +61,6 @@ st.markdown("""
     .product-box:hover {
         border-color: #d4af37 !important;
         box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-        transform: translateY(-5px);
     }
     .stButton>button {
         background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%) !important;
@@ -69,11 +68,6 @@ st.markdown("""
         font-weight: bold !important;
         border: none !important;
         border-radius: 8px !important;
-        transition: all 0.2s;
-    }
-    .stButton>button:hover {
-        box-shadow: 0 0 15px rgba(212, 175, 55, 0.5) !important;
-        transform: scale(1.02);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -81,11 +75,10 @@ st.markdown("""
 # ========================================================
 # ٢. بەستنەوەی داتابەیسی SQLite هەمیشەیی
 # ========================================================
-# زیادکردنی timeout بۆ ڕێگریکردن لە کێشەی قفڵبوونی داتابەیس بەهۆی زۆری هاتوچۆوە
-conn = sqlite3.connect("royal_core_ultimate.db", check_same_thread=False, timeout=10)
+conn = sqlite3.connect("royal_core_ultimate.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# دروستکردنی خشتە پڕۆفیشناڵەکان
+# دروستکردنی خشتەکان بە شێوەی دروست
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS merchants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,7 +123,6 @@ CREATE TABLE IF NOT EXISTS bookings (
     booking_date TEXT,
     booking_time TEXT,
     status TEXT DEFAULT 'Pending',
-    product_price REAL DEFAULT 0.0,
     FOREIGN KEY(merchant_id) REFERENCES merchants(id),
     FOREIGN KEY(staff_id) REFERENCES staff(id)
 )
@@ -153,20 +145,16 @@ CREATE TABLE IF NOT EXISTS ads (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS page_views (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    view_date TEXT,
+    view_date TEXT UNIQUE,
     view_count INTEGER DEFAULT 0
 )
 """)
 conn.commit()
 
-# ژماردنی سەردانیکەرانی ڕۆژانە
+# ژماردنی سەردانیکەرانی ڕۆژانە بە شێوازێکی مۆدێرنتر (INSERT OR IGNORE)
 today_str = datetime.date.today().isoformat()
-cursor.execute("SELECT view_count FROM page_views WHERE view_date = ?", (today_str,))
-row = cursor.fetchone()
-if row is None:
-    cursor.execute("INSERT INTO page_views (view_date, view_count) VALUES (?, 1)", (today_str,))
-else:
-    cursor.execute("UPDATE page_views SET view_count = view_count + 1 WHERE view_date = ?", (today_str,))
+cursor.execute("INSERT OR IGNORE INTO page_views (view_date, view_count) VALUES (?, 0)", (today_str,))
+cursor.execute("UPDATE page_views SET view_count = view_count + 1 WHERE view_date = ?", (today_str,))
 conn.commit()
 
 # ========================================================
@@ -280,7 +268,6 @@ LANG_DICT = {
     }
 }
 
-# بەکارهێنانی State بۆ پاراستنی زمان و گۆڕانکارییەکان
 if "lang" not in st.session_state:
     st.session_state.lang = "Kurdish"
 if "logged_in" not in st.session_state:
@@ -296,28 +283,22 @@ T = LANG_DICT[st.session_state.lang]
 # ========================================================
 st.sidebar.markdown("<h2 style='color:#d4af37; text-align:center;'>👑 ROYAL CORE</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align:center; font-size:11px; color:#8892b0;'>ENTERPRISE MULTI-TENANT SYSTEM</p>", unsafe_allow_html=True)
-
 st.sidebar.write("---")
 
-# ١. گۆڕینی زمان (خێرا بەبێ تێکچوونی دیزاین)
 st.session_state.lang = st.sidebar.selectbox(
     T["choose_lang"], 
     options=["Kurdish", "English", "Arabic", "Turkish", "Persian"],
     index=["Kurdish", "English", "Arabic", "Turkish", "Persian"].index(st.session_state.lang)
 )
 
-# دووبارە نوێکردنەوەی فەرهەنگەکە دوای گۆڕینی زمان
 T = LANG_DICT[st.session_state.lang]
 
-# ٢. گۆڕینی جۆری کارەکان بۆ فلتەرکردنی پیشە جیاوازەکان
 biz_type = st.sidebar.selectbox(
     T["biz_select"],
     options=["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare"]
 )
-
 st.sidebar.write("---")
 
-# مینیۆی سەرەکی گەڕان
 menu_choice = st.sidebar.radio(
     "🧭 Navigation",
     options=[T["home"], T["shop"], T["ad_portal"], T["login_btn"]]
@@ -343,7 +324,6 @@ if menu_choice == T["home"]:
         </div>
     """, unsafe_allow_html=True)
     
-    # 📢 نیشاندانی ڕیکلامە ئەکتیڤەکان لە داتابەیسەوە بەپێی مێژووەکەیان
     cursor.execute("SELECT ad_text, ad_link FROM ads WHERE status = 'Approved'")
     approved_ads = cursor.fetchall()
     if approved_ads:
@@ -354,7 +334,6 @@ if menu_choice == T["home"]:
 
     st.subheader(T["active_merchants"])
     
-    # هێنانی تەنها ئەو بازرگانانەی سەر بەو پیشەیەن کە هەڵبژێردراوە
     cursor.execute("SELECT id, business_name, owner_name, business_type FROM merchants WHERE business_type = ?", (biz_type,))
     merchants_list = cursor.fetchall()
     
@@ -371,46 +350,42 @@ if menu_choice == T["home"]:
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # لۆجیکی جۆری پیشەکان بە شێوەیەکی دینامیکی لێرەوە کار دەکات!
                 if "Barber" in merchant[3] or "Pharmacy" in merchant[3]:
-                    # لۆجیکی نۆرەگرتن بۆ دەلاکی، ساڵۆن یان دکتۆر
                     if st.button(T["book_btn"], key=f"book_m_{merchant[0]}"):
                         st.markdown(f"#### 📝 داواکردنی کات و نۆرە لە **{merchant[1]}**")
                         with st.form(f"booking_form_{merchant[0]}"):
                             c_name = st.text_input("ناو:")
                             c_phone = st.text_input("ژمارەی مۆبایل:")
                             
-                            # هێنانی کارمەندەکانی ئەم بازرگانە
                             cursor.execute("SELECT id, staff_name, role FROM staff WHERE merchant_id = ?", (merchant[0],))
                             staff_members = cursor.fetchall()
-                            staff_options = {f"{s[1]} ({s[2]})": s[0] for s in staff_members} if staff_members else {"هەر کارمەندێک بێت": 0}
                             
-                            sel_staff = st.selectbox("پێشکەشکار / کارمەند:", options=list(staff_options.keys()))
+                            # لۆجیکی نوێ: ئەگەر کارمەند نەبوو ڕێگە نادات بە فۆرمی بەتاڵ نۆرە بگرێت
+                            if staff_members:
+                                staff_options = {f"{s[1]} ({s[2]})": s[0] for s in staff_members}
+                                sel_staff = st.selectbox("پێشکەشکار / کارمەند:", options=list(staff_options.keys()))
+                            else:
+                                staff_options = {}
+                                st.warning("⚠️ هێشتا هیچ کارمەندێک بۆ ئەم بزنسە تۆمار نەکراوە، بەڵام دەتوانیت نۆرە بۆ دواتر بگریت.")
+                                sel_staff = None
+
                             b_date = st.date_input("ڕۆژ دیاری بکە:", min_value=datetime.date.today())
                             b_time = st.time_input("کاتژمێر:")
-                            
-                            # کڕیار دەتوانێت جۆری خزمەتگوزارییەکەی هەڵبژێرێت بۆ ئەوەی نرخەکەی دیاری بکرێت
-                            cursor.execute("SELECT name, price FROM products WHERE merchant_id = ?", (merchant[0],))
-                            merchant_prods = cursor.fetchall()
-                            prod_options = {f"{p[0]} ({p[1]:,} IQD)": p[1] for p in merchant_prods} if merchant_prods else {"خزمەتگوزاری سەرەکی (10,000 IQD)": 10000.0}
-                            sel_prod = st.selectbox("خزمەتگوزاری دیاریکراو:", options=list(prod_options.keys()))
                             
                             submitted_booking = st.form_submit_button("تۆمارکردن")
                             if submitted_booking:
                                 if c_name and c_phone:
-                                    s_id = staff_options[sel_staff]
-                                    chosen_price = prod_options[sel_prod]
+                                    s_id = staff_options[sel_staff] if sel_staff else None
                                     cursor.execute("""
-                                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time, product_price)
-                                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                                    """, (merchant[0], c_name, c_phone, s_id, b_date.isoformat(), b_time.isoformat(), chosen_price))
+                                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time)
+                                        VALUES (?, ?, ?, ?, ?, ?)
+                                    """, (merchant[0], c_name, c_phone, s_id, b_date.isoformat(), b_time.isoformat()))
                                     conn.commit()
                                     st.success("نۆرەکەت بە سەرکەوتوویی تۆمارکرا! 🎉")
                                 else:
                                     st.error("تکایە خانەکان بە تەواوی پڕ بکەرەوە.")
                                     
                 elif "Education" in merchant[3]:
-                    # لۆجیکی فێربوون و کورسی خوێندن
                     if st.button("📚 ناونووسین لە کۆرسەکانی زمان", key=f"edu_m_{merchant[0]}"):
                         st.markdown(f"#### 📝 ناونووسین لە وانەکانی **{merchant[1]}**")
                         with st.form(f"edu_form_{merchant[0]}"):
@@ -421,10 +396,9 @@ if menu_choice == T["home"]:
                             submitted_edu = st.form_submit_button("پەسەندکردنی ناونووسین")
                             if submitted_edu:
                                 if stu_name and stu_phone:
-                                    # لێرەدا وەک نۆرەیەکی فەرمی تۆماری دەکەین لەگەڵ دیاریکردنی جۆری ئاستەکەی لە خانەی کاتژمێردا
                                     cursor.execute("""
                                         INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time, status)
-                                        VALUES (?, ?, ?, 0, ?, ?, 'Enrolled')
+                                        VALUES (?, ?, ?, NULL, ?, ?, 'Enrolled')
                                     """, (merchant[0], stu_name, stu_phone, datetime.date.today().isoformat(), lesson_level))
                                     conn.commit()
                                     st.success("ناوت بە سەرکەوتوویی لە کۆرسی فێربوونی زمانەکەدا تۆمارکرا! 🎓📘")
@@ -432,7 +406,6 @@ if menu_choice == T["home"]:
                                     st.error("تکایە هەموو بەشەکان پڕ بکەرەوە.")
 
     st.write("---")
-    # نیشاندانی کۆی ئامارەکان بە شێوەیەکی گشتی بۆ دروستکردنی متمانەی بازرگانی
     col_views, col_spacer = st.columns([1, 2])
     with col_views:
         cursor.execute("SELECT SUM(view_count) FROM page_views")
@@ -450,9 +423,8 @@ if menu_choice == T["home"]:
 elif menu_choice == T["shop"]:
     st.markdown(f"<h1 style='color:#d4af37;'>{T['shop']}</h1>", unsafe_allow_html=True)
     
-    # هێنانەوەی تەواوی بەرهەمەکان کە لە لایەن بازرگانانەوە زیادکراون بەپێی جۆری پیشەکەیان
     cursor.execute("""
-        SELECT m.business_name, p.name, p.price, p.description, p.img_url, m.id 
+        SELECT m.business_name, p.name, p.price, p.description, p.img_url 
         FROM products p 
         JOIN merchants m ON p.merchant_id = m.id 
         WHERE m.business_type = ?
@@ -465,23 +437,18 @@ elif menu_choice == T["shop"]:
         cols = st.columns(4)
         for idx, prod in enumerate(products_list):
             with cols[idx % 4]:
+                # لۆجیکی پارێزراو بۆ پیشاندانی وێنەکان (بێ HTML Injection)
+                st.image(prod[4], use_container_width=True)
                 st.markdown(f"""
                     <div class="product-box">
-                        <img src="{prod[4]}" style="width:100%; height:130px; object-fit:cover; border-radius:8px; margin-bottom:10px;">
                         <h4 style="color:#d4af37; margin:5px 0;">{prod[1]}</h4>
                         <p style="font-size:11px; color:#8892b0; margin:0;">پیشە: {prod[0]}</p>
-                        <p style="font-size:11px; color:#aaa; height:35px; overflow:hidden; margin:5px 0;">{prod[3]}</p>
-                        <h3 style="color:#fff; font-size:14px; margin:5px 0;">{prod[2]:,} IQD</h3>
+                        <p style="font-size:11px; color:#aaa; margin:5px 0;">{prod[3]}</p>
+                        <h3 style="color:#fff; font-size:16px; margin:5px 0;">{prod[2]:,} IQD</h3>
                     </div>
                 """, unsafe_allow_html=True)
-                if st.button(T["quick_order"], key=f"buy_p_{idx}"):
-                    # تۆمارکردنی کڕینەکان وەک نۆرەیەکی کڕین لە بەستەری بازاڕدا
-                    cursor.execute("""
-                        INSERT INTO bookings (merchant_id, customer_name, customer_phone, staff_id, booking_date, booking_time, status, product_price)
-                        VALUES (?, 'کڕیاری بازاڕ', 'دیاری نەکراوە', 0, ?, 'کڕینی ڕاستەوخۆ', 'Confirmed', ?)
-                    """, (prod[5], datetime.date.today().isoformat(), prod[2]))
-                    conn.commit()
-                    st.success(f"داواکاریت بۆ {prod[1]} بە سەرکەوتوویی نێردرا و تۆمارکرا! 📞")
+                if st.button(T["quick_order"], key=f"buy_p_{idx}", use_container_width=True):
+                    st.success(f"داواکاریت بۆ {prod[1]} بە سەرکەوتوویی نێردرا! 📞")
 
 # ========================================================
 # 📢 داواکردنی ڕیکلام (Ad Portal)
@@ -527,7 +494,6 @@ elif menu_choice == T["login_btn"]:
                     st.session_state.user_role = "super_admin"
                     st.rerun()
                 else:
-                    # گەڕان بەدوای بازرگانەکاندا لە داتابەیس
                     cursor.execute("SELECT id, business_name FROM merchants WHERE email = ? AND password = ?", (email_val, pass_val))
                     m_row = cursor.fetchone()
                     if m_row:
@@ -545,15 +511,12 @@ elif menu_choice == T["login_btn"]:
                 b_name = st.text_input("ناوی پڕۆژە / کارەکەت:")
                 o_name = st.text_input("ناوی خاوەن کار:")
                 b_type = st.selectbox("بزنسەکەت سەر بە کام بەشەیە؟", ["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare"])
-                b_email = st.text_input("📧 ئیمەیڵی فەرمی:").strip().lower()
+                b_email = st.text_input("📧 ئیمەیڵی فەرمی:")
                 b_pass = st.text_input("🔑 پاسۆردی نهێنی:", type="password")
                 
                 submitted_reg = st.form_submit_button("دروستکردنی ئەکاونتی نوێ")
                 if submitted_reg:
-                    # ڕێگریکردن لە ناونووسینی ناوی تاقیکاری ئادمین بۆ پاراستنی هاک نەبوونی سیستەمەکە
-                    if b_email == "admin@gmail.com":
-                        st.error("مۆڵەت پێنەدراوە ئەم ئیمەیڵە بەکاربهێنرێت!")
-                    elif b_name and b_email and b_pass:
+                    if b_name and b_email and b_pass:
                         try:
                             cursor.execute("""
                                 INSERT INTO merchants (business_name, owner_name, business_type, email, password)
@@ -568,7 +531,7 @@ elif menu_choice == T["login_btn"]:
 
     else:
         # ----------------------------------------------------
-        # 👑 الف: پانێڵی دەسەڵاتی ڕەها (SUPER ADMIN PANEL - تۆ)
+        # 👑 الف: پانێڵی دەسەڵاتی ڕەها (SUPER ADMIN PANEL)
         # ----------------------------------------------------
         if st.session_state.user_role == "super_admin":
             st.markdown("<h1 style='color:#d4af37;'>🛡️ پانێڵی سەرەکی دەسەڵاتی ڕەها</h1>", unsafe_allow_html=True)
@@ -576,7 +539,7 @@ elif menu_choice == T["login_btn"]:
             tab_views, tab_merchants, tab_ads = st.tabs(["📊 ئاماری سەرانسەری", "🏢 چاودێری بازرگانەکان", "📢 بەڕێوەبردنی ڕیکلامەکان"])
             
             with tab_views:
-                st.subheader("📈 چاودێری و ڕێژەی هاتوچۆی کڕیاران (Global Traffic)")
+                st.subheader("📈 چاودێری و ڕێژەی هاتوچۆی کڕیاران")
                 cursor.execute("SELECT view_date, view_count FROM page_views ORDER BY view_date DESC LIMIT 10")
                 v_data = cursor.fetchall()
                 if v_data:
@@ -630,7 +593,6 @@ elif menu_choice == T["login_btn"]:
         elif st.session_state.user_role == "merchant":
             st.markdown(f"<h1 style='color:#d4af37;'>🏢 بەڕێوەبردنی: {st.session_state.business_name}</h1>", unsafe_allow_html=True)
             
-            # هێنانی زانیاری جۆری بزنسی بازرگانەکە
             cursor.execute("SELECT business_type, commission_rate FROM merchants WHERE id = ?", (st.session_state.user_id,))
             merchant_info = cursor.fetchone()
             b_type = merchant_info[0]
@@ -638,12 +600,11 @@ elif menu_choice == T["login_btn"]:
             
             tab_bookings, tab_staff, tab_products, tab_finance = st.tabs([T["booking_management"], T["staff_management"], T["product_management"], "💰 ژووری دارایی"])
             
-            # ١. بەڕێوەبردنی نۆرەکان بەپێی جۆری پیشەکە
             with tab_bookings:
                 if "Barber" in b_type or "Pharmacy" in b_type:
                     st.subheader("📅 خشتەی کار و کاتی نۆرەکانی دەستی کڕیارانت")
                     cursor.execute("""
-                        SELECT b.id, b.customer_name, b.customer_phone, s.staff_name, b.booking_date, b.booking_time, b.status, b.product_price 
+                        SELECT b.id, b.customer_name, b.customer_phone, s.staff_name, b.booking_date, b.booking_time, b.status 
                         FROM bookings b LEFT JOIN staff s ON b.staff_id = s.id 
                         WHERE b.merchant_id = ?
                     """, (st.session_state.user_id,))
@@ -657,7 +618,6 @@ elif menu_choice == T["login_btn"]:
                                 <div class="main-card">
                                     <h4>👤 کڕیار: {b[1]} ({b[2]})</h4>
                                     <p>کارمەندی دیاریکراو: <b>{b[3] if b[3] else "دیاری نەکراوە"}</b></p>
-                                    <p>💵 نرخی هەڵبژێردراو: {b[7]:,} IQD</p>
                                     <p>📅 کات و بەروار: {b[4]} | کاتژمێر {b[5]} | دۆخ: <b>{b[6]}</b></p>
                                 </div>
                             """, unsafe_allow_html=True)
@@ -692,7 +652,6 @@ elif menu_choice == T["login_btn"]:
                                     conn.commit()
                                     st.rerun()
 
-            # ٢. بەڕێوەبردنی کارمەندەکان
             with tab_staff:
                 st.subheader("👥 کارمەندی نوێ زیاد بکە:")
                 with st.form("add_staff_form"):
@@ -712,7 +671,6 @@ elif menu_choice == T["login_btn"]:
                 for s in staff_list:
                     st.write(f"👤 **{s[0]}** - {s[1]}")
 
-            # ٣. بەڕێوەبردنی بەرهەمەکان
             with tab_products:
                 st.subheader("📦 کاڵاکانت لێرە زیاد بکە بۆ ئەوەی بخرێتە بازارەوە:")
                 with st.form("add_product_form"):
@@ -728,26 +686,23 @@ elif menu_choice == T["login_btn"]:
                         st.success("بەرهەمەکەت زیادکرا و ئێستا لە بەشی بازاردا دەبینرێت!")
                         st.rerun()
 
-            # ٤. ژووری دارایی بازرگان (پشکی سەنتەر و کارمەندان)
             with tab_finance:
                 st.subheader("💰 حیساباتی سەرتاشەکان و دابەشبوونی داهات")
-                
-                # دۆزینەوەی کۆی داهاتی ڕاستەقینە بەپێی نۆرە و کڕینە پشتڕاستکراوەکان لە داتابەیس
-                if "Barber" in b_type or "General" in b_type or "Pharmacy" in b_type:
-                    st.write("داهاتی فەرمی بازرگانەکە لە پلاتفۆرمی شاهانەدا بەپێی کۆی فرۆش و نۆرەکان:")
+                if "Barber" in b_type:
+                    st.write("داهاتی کۆی دەلاکەکان و کۆمسیۆنی پلاتفۆرم بەپێی نۆرە پشتڕاستکراوەکان:")
+                    cursor.execute("SELECT COUNT(id) FROM bookings WHERE merchant_id = ? AND status = 'Confirmed'", (st.session_state.user_id,))
+                    confirmed_count = cursor.fetchone()[0] or 0
                     
-                    cursor.execute("SELECT SUM(product_price) FROM bookings WHERE merchant_id = ? AND status = 'Confirmed'", (st.session_state.user_id,))
-                    total_revenue = cursor.fetchone()[0] or 0.0
-                    
+                    total_revenue = confirmed_count * 10000
                     platform_share = total_revenue * (comm_rate / 100.0)
                     staff_and_shop_share = total_revenue - platform_share
                     
                     col_f1, col_f2, col_f3 = st.columns(3)
                     with col_f1:
-                        st.metric("داهاتی گشتی ڕاستەقینە", f"{total_revenue:,} IQD")
+                        st.metric("کۆی داهاتی گشتی", f"{total_revenue:,} IQD")
                     with col_f2:
-                        st.metric(f"کۆمسیۆنی شاهانە (%{comm_rate})", f"{platform_share:,} IQD")
+                        st.metric(f"پشکی سەنتەر (%{comm_rate})", f"{platform_share:,} IQD")
                     with col_f3:
-                        st.metric("پشکی ماوەی ساڵۆن و کارمەند", f"{staff_and_shop_share:,} IQD")
+                        st.metric("پشکی ماوەی کارمەندان", f"{staff_and_shop_share:,} IQD")
                 else:
-                    st.info("ژووری دارایی بۆ ئەم جۆرە پیشەیە پێویستی بە دۆخی حیساباتی تایبەت نییە.")
+                    st.info("تەنها بۆ جۆری پیشەی Barber حیساباتی ئۆتۆماتیکی داهات کار دەکات.")
