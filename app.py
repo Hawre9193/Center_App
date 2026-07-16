@@ -2,19 +2,25 @@ import streamlit as st
 import sqlite3
 import datetime
 import pandas as pd
+import time
 
 # ========================================================
 # ١. ڕێکخستنی لاپەڕە و دیزاینی تاریکی زێڕینی شاهانە
 # ========================================================
 st.set_page_config(
-    page_title="سەنتەری شاهانە | Royal Core SaaS",
+    page_title="ئیمپڕاتۆریەتی شاهانە | Royal Core SaaS",
     page_icon="👑",
     layout="wide"
 )
 
-# لێدانی دەرزی جادوویی CSS بۆ ڕوواڵەتێکی جیهانی بێ لاگ
+# لێدانی دەرزی جادوویی CSS بۆ ڕوواڵەتێکی جیهانی بێ لاگ و مۆدێرن
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;700&display=swap');
+    
+    * {
+        font-family: 'Noto Sans Arabic', sans-serif !important;
+    }
     .stApp {
         background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
         color: #e2e8f0 !important;
@@ -25,60 +31,76 @@ st.markdown("""
     }
     .royal-header {
         text-align: center;
-        padding: 25px;
+        padding: 30px;
         background: linear-gradient(135deg, #161822 0%, #0b0c10 100%);
-        border: 1px solid rgba(212, 175, 55, 0.25);
-        border-radius: 15px;
+        border: 2px solid rgba(212, 175, 55, 0.35);
+        border-radius: 20px;
         margin-bottom: 25px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        box-shadow: 0 4px 25px rgba(0,0,0,0.8);
     }
     .ad-banner {
         background: linear-gradient(90deg, #aa7c11 0%, #d4af37 50%, #aa7c11 100%) !important;
         color: #000000 !important;
-        padding: 15px !important;
+        padding: 18px !important;
         border-radius: 12px !important;
         text-align: center;
         font-weight: bold;
-        box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+        box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
         margin-bottom: 30px;
-        font-size: 16px;
+        font-size: 18px;
     }
     .main-card {
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(212, 175, 55, 0.15) !important;
-        border-radius: 12px !important;
-        padding: 20px !important;
-        margin-bottom: 15px;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(212, 175, 55, 0.2) !important;
+        border-radius: 15px !important;
+        padding: 22px !important;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     }
     .product-box {
         background: rgba(255, 255, 255, 0.02) !important;
-        border: 1px solid rgba(212, 175, 55, 0.1) !important;
-        border-radius: 12px !important;
-        padding: 15px !important;
+        border: 1px solid rgba(212, 175, 55, 0.12) !important;
+        border-radius: 15px !important;
+        padding: 18px !important;
         text-align: center;
         transition: all 0.3s ease;
     }
     .product-box:hover {
         border-color: #d4af37 !important;
-        box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+        transform: translateY(-5px);
     }
     .stButton>button {
         background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%) !important;
         color: #000 !important;
         font-weight: bold !important;
         border: none !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
+        transition: all 0.25s ease-in-out;
+    }
+    .stButton>button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+    }
+    .error-box-custom {
+        color: #ff4b4b;
+        background-color: rgba(255, 75, 75, 0.1);
+        padding: 10px;
+        border-radius: 8px;
+        border-left: 4px solid #ff4b4b;
+        margin-top: 5px;
+        font-size: 13px;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ========================================================
-# ٢. بەستنەوەی داتابەیسی SQLite هەمیشەیی
+# ٢. بەستنەوەی داتابەیسی SQLite هەمیشەیی و چاککردنی خشتەکان
 # ========================================================
 conn = sqlite3.connect("royal_core_ultimate.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# دروستکردنی خشتەکان بە شێوەی دروست
+# دروستکردنی خشتەکان بە پارێزراوی و زیادکردنی خانە نوێیەکان بەپێی ڕێنماییەکان
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS merchants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +109,10 @@ CREATE TABLE IF NOT EXISTS merchants (
     business_type TEXT,
     email TEXT UNIQUE,
     password TEXT,
+    phone TEXT,
+    country TEXT,
+    city TEXT,
+    address TEXT,
     commission_rate REAL DEFAULT 10.0
 )
 """)
@@ -132,7 +158,12 @@ cursor.execute("""
 CREATE TABLE IF NOT EXISTS ads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_name TEXT,
+    business_name TEXT,
     client_phone TEXT,
+    country TEXT,
+    city TEXT,
+    business_type TEXT,
+    address TEXT,
     ad_text TEXT,
     ad_link TEXT,
     duration_months INTEGER,
@@ -149,38 +180,97 @@ CREATE TABLE IF NOT EXISTS page_views (
     view_count INTEGER DEFAULT 0
 )
 """)
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    merchant_id INTEGER,
+    customer_name TEXT,
+    customer_phone TEXT,
+    product_details TEXT,
+    total_price REAL,
+    order_date TEXT,
+    status TEXT DEFAULT 'Pending'
+)
+""")
 conn.commit()
 
-# ژماردنی سەردانیکەرانی ڕۆژانە بە شێوازێکی مۆدێرنتر (INSERT OR IGNORE)
+# دڵنیابوونەوە لە هەمیشەیی بوونی هەندێک خانە لە داتابەیسە کۆنەکاندا
+try:
+    cursor.execute("ALTER TABLE merchants ADD COLUMN phone TEXT")
+    cursor.execute("ALTER TABLE merchants ADD COLUMN country TEXT")
+    cursor.execute("ALTER TABLE merchants ADD COLUMN city TEXT")
+    cursor.execute("ALTER TABLE merchants ADD COLUMN address TEXT")
+    conn.commit()
+except sqlite3.OperationalError:
+    pass  # خانەکان پێشتر بوونیان هەبووە
+
+try:
+    cursor.execute("ALTER TABLE ads ADD COLUMN business_name TEXT")
+    cursor.execute("ALTER TABLE ads ADD COLUMN country TEXT")
+    cursor.execute("ALTER TABLE ads ADD COLUMN city TEXT")
+    cursor.execute("ALTER TABLE ads ADD COLUMN business_type TEXT")
+    cursor.execute("ALTER TABLE ads ADD COLUMN address TEXT")
+    conn.commit()
+except sqlite3.OperationalError:
+    pass
+
+# ژماردنی سەردانیکەرانی ڕۆژانە بە شێوازێکی هەمیشەیی بێ تێکچوون
 today_str = datetime.date.today().isoformat()
 cursor.execute("INSERT OR IGNORE INTO page_views (view_date, view_count) VALUES (?, 0)", (today_str,))
 cursor.execute("UPDATE page_views SET view_count = view_count + 1 WHERE view_date = ?", (today_str,))
 conn.commit()
 
 # ========================================================
-# ٣. فەرهەنگی گەورەی زمانەکان (٥ زمان بە فۆرم و وردەکارییەوە)
+# ٣. فەرهەنگی گەورەی زمانەکان (٥ زمان بە وەرگێڕانی ١٠٠٪ و ورد)
 # ========================================================
 LANG_DICT = {
     "Kurdish": {
-        "title": "👑 ئیمپراتۆریەتی شاهانە",
+        "title": "👑 ئیمپڕاتۆریەتی شاهانە",
         "subtitle": "گەورەترین سەکۆی مۆڵتی-بازرگانی بۆ سەرجەم خزمەتگوزارییەکان لە کوردستان",
         "home": "🏠 لاپەڕەی سەرەکی",
-        "shop": "🛍️ بازار و کەرەستەکان",
+        "shop": "🛍️ بازاڕ و کەرەستەکان",
         "ad_portal": "📢 داواکردنی ڕیکلام",
         "login_btn": "🔑 دەروازەی ئەندامان",
         "choose_lang": "🌐 زمان هەڵبژێرە:",
-        "biz_select": "🏢 جۆری کارەکەت:",
+        "biz_select": "🏢 جۆری کارەکەت زیاتر دیاری بکە:",
         "book_btn": "📅 نۆرە بگرە لەم بزنسە",
         "quick_order": "🛒 کڕینی خێرا",
-        "username": "ئیمەیڵ:",
-        "password": "پاسۆرد:",
-        "login_confirm": "چوونەژوورەوە",
+        "username": "ئیمەیڵی فەرمی یان بازرگانی:",
+        "password": "پاسۆردی پارێزراو:",
+        "login_confirm": "چوونەژوورەوە بۆ ناو پلاتفۆڕم",
         "ad_title": "پۆرتالی ڕیکلامی شاهانە",
         "active_merchants": "🏢 ئەو بزنسانەی لەگەڵمان ئەکتیڤن",
         "staff_management": "👥 کارمەندەکان",
         "product_management": "📦 بەرهەمەکان",
-        "booking_management": "📅 نۆرەکان",
-        "total_views": "کۆی بینینی لاپەڕەکانمان"
+        "booking_management": "📅 نۆرەکان و تۆمارەکان",
+        "total_views": "کۆی گشتی بینینی لاپەڕەکانمان تا ئێستا",
+        "no_merchant": "⚠️ هێشتا هیچ کام لە بزنسەکان و پیشەکان بۆ ئەم بەشە تۆمار نەکراوە.",
+        "no_product": "⚠️ هیچ بەرهەمێک بۆ ئەم بەش و پیشەیە دیاری نەکراوە.",
+        "plat_banner": "📢 پلاتفۆڕمی شاهانە: بەرهەمەکانت لێرە بەرز بکەرەوە بۆ ئەوەی زۆرترین فرۆشتنت هەبێت!",
+        "ad_intro": "لێرەوە داوای ڕیکلامی سپۆنسەری شاهانە بکە بۆ بزنسەکەت:",
+        "fullname": "ناوی بەڕێزت:",
+        "bizname": "ناوی بزنسەکەت یان کۆمپانیاکەت:",
+        "phone_whats": "ژمارەی مۆبایل / واتساپ:",
+        "ad_text": "دەقی ڕیکلامی خوازراو:",
+        "ad_link": "بەستەری فەرمی ڕیکلام (فەیسبووک، ئینستاگرام، ماڵپەڕ):",
+        "ad_duration": "ماوەی چالاک مانەوە بە مانگ:",
+        "ad_submit": "ناردنی داواکاری بۆ دەستەی شاهانە",
+        "success_ad": "داواکارییەکەت بە سەرکەوتوویی نێردرا! دوای پێداچوونەوەی ئەدمین بڵاودەبێتەوە. 🎉",
+        "fill_fields": "تکایە خانە پێویستەکان بە دروستی پڕ بکەرەوە!",
+        "reg_banner": "بزنسەکەت لێرەوە تۆمار بکە بۆ ئەوەی زیاتر بەناوبانگ بیت لە وێبسایتی جیهانی شاهانە 🚀",
+        "reg_btn": "تۆمارکردنی بزنسی نوێ",
+        "owner_name": "ناوی تەواوی خاوەن کار:",
+        "biz_sec": "بزنسەکەت سەر بە کام بەشەیە؟",
+        "country": "وڵات:",
+        "city": "شار:",
+        "address": "ناونیشانی فیزیکی ورد:",
+        "reg_submit": "دروستکردنی ئەکاونتی نوێ و تۆمارکردن",
+        "reg_success": "پیرۆزە! ئەکاونتی بازرگانیت بە سەرکەوتوویی دروستکرا. ئێستا دەتوانیت بچیتە ژوورەوە. 🎉",
+        "email_exists": "⚠️ ئەم ئیمەیڵە پێشتر لە سیستەمدا بەکارهێنراوە!",
+        "finance_tab": "💰 ژووری دارایی تایبەت",
+        "search_label": "🔍 بگەڕێ بۆ بەرهەم یان بزنس لە وێبسایتی شاهانە:",
+        "contact_admin": "📞 پەیوەندی بە دەستەی بەڕێوەبەرایەتی و ئەدمینەکانەوە بکە لە ڕێگەی واتساپەوە:"
     },
     "English": {
         "title": "👑 Royal Empire",
@@ -190,18 +280,44 @@ LANG_DICT = {
         "ad_portal": "📢 Request Advertisement",
         "login_btn": "🔑 Member Portal",
         "choose_lang": "🌐 Choose Language:",
-        "biz_select": "🏢 Business Type:",
+        "biz_select": "🏢 Select Your Business Type:",
         "book_btn": "📅 Book an Appointment",
         "quick_order": "🛒 Quick Buy",
-        "username": "Email:",
-        "password": "Password:",
-        "login_confirm": "Login",
+        "username": "Official or Business Email:",
+        "password": "Secure Password:",
+        "login_confirm": "Login to Platform",
         "ad_title": "Royal Advertising Portal",
         "active_merchants": "🏢 Active Businesses on Platform",
         "staff_management": "👥 Staff Members",
-        "product_management": "📦 Manage Products",
-        "booking_management": "📅 Manage Bookings",
-        "total_views": "Total Page Views"
+        "product_management": "📦 Products",
+        "booking_management": "📅 Bookings & Records",
+        "total_views": "Total Page Views Till Now",
+        "no_merchant": "⚠️ No businesses are registered in this category yet.",
+        "no_product": "⚠️ No products are currently listed for this business/category.",
+        "plat_banner": "📢 Royal Platform: Elevate your products here for maximum reach!",
+        "ad_intro": "Request your Royal Sponsored Ad here for your business:",
+        "fullname": "Your Full Name:",
+        "bizname": "Your Business or Company Name:",
+        "phone_whats": "Mobile Number / WhatsApp:",
+        "ad_text": "Desired Ad Content Text:",
+        "ad_link": "Official Ad Link (Facebook, Instagram, Web):",
+        "ad_duration": "Duration in Months:",
+        "ad_submit": "Send Request to Royal Board",
+        "success_ad": "Your request has been successfully submitted! It will appear once approved by admin. 🎉",
+        "fill_fields": "Please fill all required fields correctly!",
+        "reg_banner": "Register your business here to become famous on the Royal International Website 🚀",
+        "reg_btn": "Register New Business",
+        "owner_name": "Full Name of Business Owner:",
+        "biz_sec": "Which section does your business belong to?",
+        "country": "Country:",
+        "city": "City:",
+        "address": "Detailed Physical Address:",
+        "reg_submit": "Create New Account & Register",
+        "reg_success": "Congratulations! Your merchant account has been created successfully. You can log in now. 🎉",
+        "email_exists": "⚠️ This email has already been registered in our system!",
+        "finance_tab": "💰 Special Finance Chamber",
+        "search_label": "🔍 Search for products or businesses on Royal Website:",
+        "contact_admin": "📞 Contact the Executive Board & Admins via WhatsApp:"
     },
     "Arabic": {
         "title": "👑 الإمبراطورية الملكية",
@@ -211,18 +327,44 @@ LANG_DICT = {
         "ad_portal": "📢 طلب إعلان",
         "login_btn": "🔑 بوابة الأعضاء",
         "choose_lang": "🌐 اختر اللغة:",
-        "biz_select": "🏢 نوع العمل التجاري:",
+        "biz_select": "🏢 حدد نوع عملك التجاري:",
         "book_btn": "📅 احجز موعداً",
         "quick_order": "🛒 شراء سريع",
-        "username": "البريد الإلكتروني:",
-        "password": "كلمة المرور:",
-        "login_confirm": "تسجيل الدخول",
+        "username": "البريد الإلكتروني الرسمي أو التجاري:",
+        "password": "كلمة المرور الآمنة:",
+        "login_confirm": "تسجيل الدخول إلى المنصة",
         "ad_title": "البوابة الإعلانية الملكية",
         "active_merchants": "🏢 الأعمال النشطة معنا",
         "staff_management": "👥 إدارة الموظفين",
-        "product_management": "📦 إدارة المنتجات",
-        "booking_management": "📅 إدارة الحجوزات",
-        "total_views": "إجمالي زيارات الصفحة"
+        "product_management": "📦 المنتجات",
+        "booking_management": "📅 الحجوزات والسجلات",
+        "total_views": "إجمالي زيارات الصفحة حتى الآن",
+        "no_merchant": "⚠️ لم يتم تسجيل أي أعمال في هذا القسم حتى الآن.",
+        "no_product": "⚠️ لا توجد منتجات معروضة لهذا القسم أو النشاط حالياً.",
+        "plat_banner": "📢 المنصة الملكية: سوّق لمنتجاتك هنا لتحقيق أعلى مبيعات ممكنة!",
+        "ad_intro": "اطلب إعلانك الممول والمدعوم من الملكية لنشاطك التجاري من هنا:",
+        "fullname": "اسمك الكامل الموقر:",
+        "bizname": "اسم نشاطك التجاري أو شركتك:",
+        "phone_whats": "رقم الهاتف / الواتساب الخاص بك:",
+        "ad_text": "نص الإعلان المطلوب:",
+        "ad_link": "رابط الإعلان الرسمي (فيسبوك، إنستغرام، موقع الكتروني):",
+        "ad_duration": "مدة الإعلان بالأشهر:",
+        "ad_submit": "إرسال الطلب إلى الإدارة الملكية",
+        "success_ad": "تم إرسال طلبك بنجاح! سيتم تفعيله بعد مراجعة المسؤولين والموافقة عليه. 🎉",
+        "fill_fields": "يرجى ملء جميع الحقول المطلوبة بشكل صحيح تماماً!",
+        "reg_banner": "سجل عملك التجاري هنا لتنال شهرة أوسع على الموقع الإلكتروني العالمي الملكي 🚀",
+        "reg_btn": "تسجيل نشاط تجاري جديد",
+        "owner_name": "الاسم الكامل لمالك العمل:",
+        "biz_sec": "إلى أي قسم ينتمي عملك التجاري؟",
+        "country": "البلد:",
+        "city": "المدينة:",
+        "address": "العنوان الفعلي التفصيلي:",
+        "reg_submit": "إنشاء حساب جديد والتسجيل",
+        "reg_success": "تهانينا! تم إنشاء حساب التاجر الخاص بك بنجاح. يمكنك الآن تسجيل الدخول. 🎉",
+        "email_exists": "⚠️ هذا البريد الإلكتروني مسجل بالفعل في نظامنا سابقاً!",
+        "finance_tab": "💰 الغرفة المالية الخاصة",
+        "search_label": "🔍 ابحث عن المنتجات أو الشركات على موقع الملكية الإلكتروني:",
+        "contact_admin": "📞 تواصل مع الهيئة التنفيذية والمسؤولين مباشرة عبر الواتساب:"
     },
     "Turkish": {
         "title": "👑 Kraliyet İmparatorluğu",
@@ -232,39 +374,91 @@ LANG_DICT = {
         "ad_portal": "📢 Reklam Başvurusu",
         "login_btn": "🔑 Üye Girişi",
         "choose_lang": "🌐 Dil Seçiniz:",
-        "biz_select": "🏢 İşletme Türü:",
+        "biz_select": "🏢 İşletme Türünüzü Belirleyin:",
         "book_btn": "📅 Randevu Al",
         "quick_order": "🛒 Hızlı Satın Al",
-        "username": "E-posta:",
-        "password": "Şifre:",
-        "login_confirm": "Giriş Yap",
+        "username": "Resmi veya Ticari E-posta:",
+        "password": "Güvenli Şifre:",
+        "login_confirm": "Platforma Giriş Yap",
         "ad_title": "Kraliyet Reklam Portalı",
         "active_merchants": "🏢 Platformdaki Aktif İşletmeler",
         "staff_management": "👥 Personel Yönetimi",
-        "product_management": "📦 Ürün Yönetimi",
-        "booking_management": "📅 Randevu Yönetimi",
-        "total_views": "Toplam Sayfa Görüntüleme"
+        "product_management": "📦 Ürünler",
+        "booking_management": "📅 Randevular ve Kayıtlar",
+        "total_views": "Şu Ana Kadarki Toplam Sayfa Görüntüleme",
+        "no_merchant": "⚠️ Bu kategoride henüz kayıtlı bir işletme bulunmamaktadır.",
+        "no_product": "⚠️ Bu bölüm veya işletme için henüz bir ürün listelenmemiştir.",
+        "plat_banner": "📢 Kraliyet Platformu: En yüksek erişim için ürünlerinizi burada öne çıkarın!",
+        "ad_intro": "İşletmeniz için Kraliyet Sponsorlu Reklam talebini buradan iletin:",
+        "fullname": "Adınız Soyadınız:",
+        "bizname": "İşletmenizin veya Şirketinizin Adı:",
+        "phone_whats": "Telefon Numarası / WhatsApp:",
+        "ad_text": "İstenen Reklam Metni İçeriği:",
+        "ad_link": "Resmi Reklam Bağlantısı (Facebook, Instagram, Web):",
+        "ad_duration": "Aylık Süre Uzunluğu:",
+        "ad_submit": "Kraliyet Kuruluna Başvuru Gönder",
+        "success_ad": "Talebiniz başarıyla gönderildi! Yönetici onayından sonra yayına alınacaktır. 🎉",
+        "fill_fields": "Lütfen gerekli alanları eksiksiz ve doğru doldurun!",
+        "reg_banner": "İşletmenizi buradan kaydedin ve Kraliyet Uluslararası Web Sitesinde daha fazla tanının 🚀",
+        "reg_btn": "Yeni İşletme Kaydı",
+        "owner_name": "İşletme Sahibinin Tam Adı:",
+        "biz_sec": "İşletmeniz hangi bölüme ait?",
+        "country": "Ülke:",
+        "city": "Şehir:",
+        "address": "Detaylı Fiziksel Adres:",
+        "reg_submit": "Yeni Hesap Oluştur ve Kaydol",
+        "reg_success": "Tebrikler! Mağaza hesabınız başarıyla oluşturuldu. Şimdi giriş yapabilirsiniz. 🎉",
+        "email_exists": "⚠️ Bu e-posta adresi sistemimizde zaten kayıtlıdır!",
+        "finance_tab": "💰 Özel Finans Odası",
+        "search_label": "🔍 Kraliyet Web Sitesinde ürün veya işletme arayın:",
+        "contact_admin": "📞 WhatsApp üzerinden Yönetim Kurulu ve Yöneticilerle iletişime geçin:"
     },
     "Persian": {
-        "title": "👑 امپراتوری سلطنتی",
+        "title": "👑 امپڕاتۆریەتی شاهانە",
         "subtitle": "بزرگترین پلتفرم چندفروشگاهی برای تمامی خدمات در کردستان",
         "home": "🏠 صفحه اصلی",
-        "shop": "🛍️ بازار و محصولات",
+        "shop": "🛍️ بازاڕ و کەرەستەکان",
         "ad_portal": "📢 ثبت درخواست تبلیغات",
         "login_btn": "🔑 پرتال اعضا",
         "choose_lang": "🌐 انتخاب زبان:",
-        "biz_select": "🏢 نوع کسب‌وکار:",
+        "biz_select": "🏢 نوع کسب‌وکار خود را مشخص کنید:",
         "book_btn": "📅 ثبت نوبت و رزرو",
         "quick_order": "🛒 خرید سریع",
-        "username": "ایمیل:",
-        "password": "رمز عبور:",
-        "login_confirm": "ورود به سیستم",
+        "username": "ایمیل رسمی یا تجاری:",
+        "password": "رمز عبور ایمن:",
+        "login_confirm": "ورود به سیستم پلتفرم",
         "ad_title": "پورتال تبلیغاتی سلطنتی",
         "active_merchants": "🏢 کسب‌وکارهای فعال در پلتفرم",
         "staff_management": "👥 مدیریت پرسنل",
-        "product_management": "📦 مدیریت محصولات",
-        "booking_management": "📅 مدیریت نوبت‌ها",
-        "total_views": "کل بازدید صفحات"
+        "product_management": "📦 محصولات",
+        "booking_management": "📅 مدیریت نوبت‌ها و دفاتر",
+        "total_views": "کل بازدید صفحات تا این لحظه",
+        "no_merchant": "⚠️ هنوز هیچ کسب‌وکاری در این دسته ثبت نشده است.",
+        "no_product": "⚠️ هیچ محصولی برای این بخش یا صنف در حال حاضر ثبت نشده است.",
+        "plat_banner": "📢 پلتفرم سلطنتی: محصولات خود را در اینجا ارتقا دهید تا بیشترین فروش را داشته باشید!",
+        "ad_intro": "درخواست تبلیغات حامی مالی سلطنتی خود را برای کسب‌وکارتان ثبت کنید:",
+        "fullname": "نام کامل شما:",
+        "bizname": "نام کسب‌وکار یا شرکت شما:",
+        "phone_whats": "شماره همراه / واتس‌اپ:",
+        "ad_text": "متن تبلیغاتی مورد نظر:",
+        "ad_link": "لینک رسمی تبلیغ (فیسبوک، اینستاگرام، وب‌سایت):",
+        "ad_duration": "مدت زمان فعال بودن به ماه:",
+        "ad_submit": "ارسال درخواست به هیئت سلطنتی",
+        "success_ad": "درخواست شما با موفقیت ارسال شد! پس از تایید مدیر منتشر خواهد شد. 🎉",
+        "fill_fields": "لطفاً تمامی فیلدهای الزامی را به درستی تکمیل کنید!",
+        "reg_banner": "کسب‌وکار خود را در اینجا ثبت کنید تا در وب‌سایت بین‌المللی سلطنتی مشهورتر شوید 🚀",
+        "reg_btn": "ثبت کسب‌وکار جدید",
+        "owner_name": "نام کامل مالک کسب‌وکار:",
+        "biz_sec": "کسب‌وکار شما متعلق به کدام بخش است؟",
+        "country": "کشور:",
+        "city": "شهر:",
+        "address": "آدرس فیزیکی دقیق:",
+        "reg_submit": "ایجاد حساب کاربری جدید و ثبت نام",
+        "reg_success": "تبریک! حساب تجاری شما با موفقیت ایجاد شد. اکنون می‌توانید وارد شوید. 🎉",
+        "email_exists": "⚠️ این ایمیل قبلاً در سیستم ثبت شده است!",
+        "finance_tab": "💰 اتاق مالی اختصاصی",
+        "search_label": "🔍 جستجوی محصولات یا کسب‌وکارها در وب‌سایت سلطنتی:",
+        "contact_admin": "📞 تماس با هیئت اجرایی و مدیران از طریق واتس‌اپ:"
     }
 }
 
@@ -275,13 +469,15 @@ if "logged_in" not in st.session_state:
     st.session_state.user_role = None
     st.session_state.user_id = None
     st.session_state.business_name = None
+if "cart" not in st.session_state:
+    st.session_state.cart = {}  # {product_id: {"name": name, "price": price, "qty": qty, "merchant_id": m_id}}
 
 T = LANG_DICT[st.session_state.lang]
 
 # ========================================================
-# 🍔 مینیۆی لای تەنیشت (Sidebar Menu)
+# ☰ مینیۆی لای تەنیشت بە شێوازی سێ هێڵەکان (Sidebar Menu ☰)
 # ========================================================
-st.sidebar.markdown("<h2 style='color:#d4af37; text-align:center;'>👑 ROYAL CORE</h2>", unsafe_allow_html=True)
+st.sidebar.markdown("<h2 style='color:#d4af37; text-align:center;'>☰ ROYAL CORE</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align:center; font-size:11px; color:#8892b0;'>ENTERPRISE MULTI-TENANT SYSTEM</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
@@ -311,34 +507,82 @@ if st.session_state.logged_in:
         st.session_state.user_role = None
         st.session_state.user_id = None
         st.session_state.business_name = None
+        st.session_state.cart = {}
         st.rerun()
+
+# زانیاری دەربارەی ڤێرژن و خاوەندارێتی لە ژێرەوەی سێ هێڵەکە
+st.sidebar.write("---")
+st.sidebar.markdown("""
+    <div style="text-align: center; color: #8892b0; font-size: 11px;">
+        <p>👑 وێبسایتی جیهانی شاهانە</p>
+        <p>ساڵی دروستکردن: 2024 - 2026</p>
+        <p>خاوەن ماف: Royal Core Team</p>
+        <p>ڤێرژنی نوێ: <b>v2.1.0 Stable</b></p>
+    </div>
+""", unsafe_allow_html=True)
 
 # ========================================================
 # 🏠 لاپەڕەی سەرەکی (Home Page)
 # ========================================================
 if menu_choice == T["home"]:
+    # کات و بەرواری ڕێک لە سەرەوەی ماڵپەڕ
+    now_dt = datetime.datetime.now().strftime("%Y-%m-%d | %I:%M:%S %p")
+    st.markdown(f"<div style='text-align: right; color:#d4af37; font-size:13px; font-weight:bold; margin-bottom:10px;'>🕒 {now_dt}</div>", unsafe_allow_html=True)
+
     st.markdown(f"""
         <div class="royal-header">
-            <h1 style="color:#d4af37; margin:0;">{T['title']}</h1>
-            <p style="color:#8892b0; margin:5px 0 0 0;">{T['subtitle']}</p>
+            <h1 style="color:#d4af37; margin:0; font-size: 32px;">{T['title']}</h1>
+            <p style="color:#8892b0; margin:8px 0 0 0; font-size: 15px;">{T['subtitle']}</p>
         </div>
     """, unsafe_allow_html=True)
     
+    # بزوێنەری گەڕان بەپێی بەروار، ناو، بەرهەم یان بزنس لە لاپەڕەی سەرەکی
+    search_q = st.text_input(T["search_label"], "").strip()
+    
+    # چاککردنی لۆجیکی پیشاندانی ڕیکلامەکان بە شێوازی چرکە بە چرکە و جوڵاو لەجیاتی لە ژێر یەکتر
     cursor.execute("SELECT ad_text, ad_link FROM ads WHERE status = 'Approved'")
     approved_ads = cursor.fetchall()
+    
     if approved_ads:
-        for ad in approved_ads:
-            st.markdown(f'<div class="ad-banner">📢 <a href="{ad[1]}" target="_blank" style="color:black; text-decoration:none;">{ad[0]}</a></div>', unsafe_allow_html=True)
+        # بەکارهێنانی State بۆ گۆڕینی ئۆتۆماتیکی ڕیکلام بە شێوازی خولی
+        if "ad_index" not in st.session_state:
+            st.session_state.ad_index = 0
+        
+        current_ad = approved_ads[st.session_state.ad_index % len(approved_ads)]
+        
+        st.markdown(f"""
+            <div class="ad-banner">
+                📢 <a href="{current_ad[1]}" target="_blank" style="color:black; text-decoration:none; font-size:18px;">
+                    {current_ad[0]}
+                </a>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # لۆجیکی جێگرەوەی کاتی بۆ خۆکار گۆڕین (لێرەدا دوگمەیەکمان داناوە بۆ گۆڕینی خێرا لەبەر سنووردارکردنی گەڕانەوەی Streamlit)
+        if len(approved_ads) > 1:
+            if st.button("🔄 ڕیکلامی داهاتوو", key="next_ad_btn"):
+                st.session_state.ad_index = (st.session_state.ad_index + 1) % len(approved_ads)
+                st.rerun()
     else:
-        st.markdown('<div class="ad-banner">📢 پلاتفۆرمی شاهانە: بەرهەمەکانت لێرە بەرز بکەرەوە بۆ ئەوەی زۆرترین فرۆشتنت هەبێت!</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="ad-banner">📢 {T["plat_banner"]}</div>', unsafe_allow_html=True)
 
     st.subheader(T["active_merchants"])
     
-    cursor.execute("SELECT id, business_name, owner_name, business_type FROM merchants WHERE business_type = ?", (biz_type,))
+    # ئەنجامی گەڕان ئەگەر تێکست نووسرابوو
+    if search_q:
+        cursor.execute("""
+            SELECT id, business_name, owner_name, business_type 
+            FROM merchants 
+            WHERE (business_name LIKE ? OR owner_name LIKE ? OR business_type LIKE ?) 
+            AND business_type = ?
+        """, (f"%{search_q}%", f"%{search_q}%", f"%{search_q}%", biz_type))
+    else:
+        cursor.execute("SELECT id, business_name, owner_name, business_type FROM merchants WHERE business_type = ?", (biz_type,))
+        
     merchants_list = cursor.fetchall()
     
     if not merchants_list:
-        st.info("هێشتا هیچ بزنسێک بۆ ئەم جۆرە پیشەیە تۆمار نەکراوە.")
+        st.info(T["no_merchant"])
     else:
         cols = st.columns(3)
         for idx, merchant in enumerate(merchants_list):
@@ -350,29 +594,30 @@ if menu_choice == T["home"]:
                     </div>
                 """, unsafe_allow_html=True)
                 
-                if "Barber" in merchant[3] or "Pharmacy" in merchant[3]:
+                # پاراستنی کۆنترۆڵی کارە جیاوازەکان (تۆمارکردنی نۆرە یان ناونووسینی زمان)
+                if "Barber" in merchant[3] or "Pharmacy" in merchant[3] or "General Market" in merchant[3]:
                     if st.button(T["book_btn"], key=f"book_m_{merchant[0]}"):
                         st.markdown(f"#### 📝 داواکردنی کات و نۆرە لە **{merchant[1]}**")
                         with st.form(f"booking_form_{merchant[0]}"):
                             c_name = st.text_input("ناو:")
-                            c_phone = st.text_input("ژمارەی مۆبایل:")
+                            c_phone = st.text_input("ژمارەی مۆبایل یان واتساپ:")
                             
                             cursor.execute("SELECT id, staff_name, role FROM staff WHERE merchant_id = ?", (merchant[0],))
                             staff_members = cursor.fetchall()
                             
-                            # لۆجیکی نوێ: ئەگەر کارمەند نەبوو ڕێگە نادات بە فۆرمی بەتاڵ نۆرە بگرێت
+                            # لۆجیکی زیادکردنی کارمەندەکانی تایبەت بە بزنس بۆ هەڵبژاردن لە لایەن موشتەری
                             if staff_members:
                                 staff_options = {f"{s[1]} ({s[2]})": s[0] for s in staff_members}
-                                sel_staff = st.selectbox("پێشکەشکار / کارمەند:", options=list(staff_options.keys()))
+                                sel_staff = st.selectbox("دیاریکردنی پێشکەشکار / کارمەندی دڵخواز:", options=list(staff_options.keys()))
                             else:
                                 staff_options = {}
-                                st.warning("⚠️ هێشتا هیچ کارمەندێک بۆ ئەم بزنسە تۆمار نەکراوە، بەڵام دەتوانیت نۆرە بۆ دواتر بگریت.")
+                                st.warning("⚠️ هێشتا هیچ کارمەندێکی فەرمی لێرە تۆمار نەکراوە، تکایە بۆ دڵنیابوونەوە لە نۆرە بە فۆرمی گشتی تۆمار بکە.")
                                 sel_staff = None
 
                             b_date = st.date_input("ڕۆژ دیاری بکە:", min_value=datetime.date.today())
                             b_time = st.time_input("کاتژمێر:")
                             
-                            submitted_booking = st.form_submit_button("تۆمارکردن")
+                            submitted_booking = st.form_submit_button("تۆمارکردنی نۆرە بە فەرمی")
                             if submitted_booking:
                                 if c_name and c_phone:
                                     s_id = staff_options[sel_staff] if sel_staff else None
@@ -381,16 +626,16 @@ if menu_choice == T["home"]:
                                         VALUES (?, ?, ?, ?, ?, ?)
                                     """, (merchant[0], c_name, c_phone, s_id, b_date.isoformat(), b_time.isoformat()))
                                     conn.commit()
-                                    st.success("نۆرەکەت بە سەرکەوتوویی تۆمارکرا! 🎉")
+                                    st.success(f"🎉 نۆرەکەت لە ئەکاونتی {merchant[1]} بە سەرکەوتوویی و بەبێ کێشە تۆمارکرا!")
                                 else:
-                                    st.error("تکایە خانەکان بە تەواوی پڕ بکەرەوە.")
+                                    st.error("تکایە خانەکان بە تەواوی پڕ بکەرەوە پێش ناردن.")
                                     
                 elif "Education" in merchant[3]:
                     if st.button("📚 ناونووسین لە کۆرسەکانی زمان", key=f"edu_m_{merchant[0]}"):
                         st.markdown(f"#### 📝 ناونووسین لە وانەکانی **{merchant[1]}**")
                         with st.form(f"edu_form_{merchant[0]}"):
                             stu_name = st.text_input("ناوى قوتابی:")
-                            stu_phone = st.text_input("ژمارەی مۆبایل:")
+                            stu_phone = st.text_input("ژمارەی مۆبایل / واتساپ:")
                             lesson_level = st.selectbox("ئاستی وانەکان:", ["Level 1 (Basic)", "Level 2 (Intermediate)", "Level 3 (Advanced)"])
                             
                             submitted_edu = st.form_submit_button("پەسەندکردنی ناونووسین")
@@ -401,10 +646,16 @@ if menu_choice == T["home"]:
                                         VALUES (?, ?, ?, NULL, ?, ?, 'Enrolled')
                                     """, (merchant[0], stu_name, stu_phone, datetime.date.today().isoformat(), lesson_level))
                                     conn.commit()
-                                    st.success("ناوت بە سەرکەوتوویی لە کۆرسی فێربوونی زمانەکەدا تۆمارکرا! 🎓📘")
+                                    st.success(f"🎓 پیرۆزە {stu_name}! ناوت بە سەرکەوتوویی لە کۆرسی فێربوونی زمانەکەدا تۆمارکرا!")
                                 else:
-                                    st.error("تکایە هەموو بەشەکان پڕ بکەرەوە.")
+                                    st.error("تکایە هەموو بەشەکان بە دروستی پڕ بکەرەوە.")
 
+    st.write("---")
+    
+    # بەشی خزمەتگوزاری پەیوەندی بە ئەدمین بە ژمارەی واتساپ
+    st.markdown(f"### {T['contact_admin']}")
+    st.info("💬 پشتیوانی تەکنیکی شاهانە: [پەیوەندی بکە لە ڕێگەی واتساپەوە (WhatsApp)](https://wa.me/9647500000000)")
+    
     st.write("---")
     col_views, col_spacer = st.columns([1, 2])
     with col_views:
@@ -418,63 +669,156 @@ if menu_choice == T["home"]:
         """, unsafe_allow_html=True)
 
 # ========================================================
-# 🛍️ بەشی بازار و کەرەستەکان (Shop View)
+# 🛍️ بەشی بازار و کەرەستەکان (Shop View - لەگەڵ سەبەتە و چاککردنی فرۆشتنی کتێب)
 # ========================================================
 elif menu_choice == T["shop"]:
     st.markdown(f"<h1 style='color:#d4af37;'>{T['shop']}</h1>", unsafe_allow_html=True)
     
-    cursor.execute("""
-        SELECT m.business_name, p.name, p.price, p.description, p.img_url 
-        FROM products p 
-        JOIN merchants m ON p.merchant_id = m.id 
-        WHERE m.business_type = ?
-    """, (biz_type,))
+    # بزوێنەری گەڕان بۆ کەرەستە و بەرهەمەکان
+    search_p = st.text_input("🔍 گەڕانی خێرا بۆ کەرەستەکان و بەرهەمەکان:", "").strip()
+    
+    if search_p:
+        cursor.execute("""
+            SELECT m.business_name, p.name, p.price, p.description, p.img_url, p.id, p.merchant_id 
+            FROM products p 
+            JOIN merchants m ON p.merchant_id = m.id 
+            WHERE m.business_type = ? AND (p.name LIKE ? OR p.description LIKE ?)
+        """, (biz_type, f"%{search_p}%", f"%{search_p}%"))
+    else:
+        cursor.execute("""
+            SELECT m.business_name, p.name, p.price, p.description, p.img_url, p.id, p.merchant_id 
+            FROM products p 
+            JOIN merchants m ON p.merchant_id = m.id 
+            WHERE m.business_type = ?
+        """, (biz_type,))
+        
     products_list = cursor.fetchall()
     
     if not products_list:
-        st.info("هیچ بەرهەمێک بۆ ئەم پیشەیە دیاری نەکراوە.")
+        st.info(T["no_product"])
     else:
         cols = st.columns(4)
         for idx, prod in enumerate(products_list):
+            p_id = prod[5]
+            p_merchant_id = prod[6]
             with cols[idx % 4]:
-                # لۆجیکی پارێزراو بۆ پیشاندانی وێنەکان (بێ HTML Injection)
-                st.image(prod[4], use_container_width=True)
+                # چارەسەری کێشەی وێنە، ئەگەر بەستەرەکە کێشەی هەبێت یان بەتاڵ بێت وێنەیەکی جێگرەوەی شاز دادەنێت
+                img_path = prod[4] if prod[4] else "https://images.unsplash.com/photo-1527799863-17b075e32712"
+                st.image(img_path, use_container_width=True)
                 st.markdown(f"""
                     <div class="product-box">
                         <h4 style="color:#d4af37; margin:5px 0;">{prod[1]}</h4>
-                        <p style="font-size:11px; color:#8892b0; margin:0;">پیشە: {prod[0]}</p>
+                        <p style="font-size:11px; color:#8892b0; margin:0;">بزنس: {prod[0]}</p>
                         <p style="font-size:11px; color:#aaa; margin:5px 0;">{prod[3]}</p>
                         <h3 style="color:#fff; font-size:16px; margin:5px 0;">{prod[2]:,} IQD</h3>
                     </div>
                 """, unsafe_allow_html=True)
-                if st.button(T["quick_order"], key=f"buy_p_{idx}", use_container_width=True):
-                    st.success(f"داواکاریت بۆ {prod[1]} بە سەرکەوتوویی نێردرا! 📞")
+                
+                # دوگمەی سەبەتەی کڕین
+                if st.button("➕ خستنە ناو سەبەتە", key=f"add_cart_{p_id}", use_container_width=True):
+                    if p_id not in st.session_state.cart:
+                        st.session_state.cart[p_id] = {
+                            "name": prod[1],
+                            "price": prod[2],
+                            "qty": 1,
+                            "merchant_id": p_merchant_id
+                        }
+                    else:
+                        st.session_state.cart[p_id]["qty"] += 1
+                    st.success(f"📥 {prod[1]} خرایە سەبەتەکەتەوە!")
+                    time.sleep(0.5)
+                    st.rerun()
+
+    # پیشاندانی بەشی سەبەتەی کڕین بە شێوەیەکی مۆدێرن بۆ موشتەری لە ژێرەوە
+    st.write("---")
+    st.markdown("### 🛒 سەبەتەی کڕینی تۆ")
+    if not st.session_state.cart:
+        st.info("سەبەتەکەت لە ئێستادا بەتاڵە.")
+    else:
+        total_cart_price = 0
+        cart_rows = []
+        for p_id, item in list(st.session_state.cart.items()):
+            sub_total = item["price"] * item["qty"]
+            total_cart_price += sub_total
+            
+            st.markdown(f"""
+                <div style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(212,175,55,0.1); margin-bottom: 8px;">
+                    <b>{item['name']}</b> - نرخ: {item['price']:,} IQD | ژمارە: {item['qty']} دانە
+                </div>
+            """, unsafe_allow_html=True)
+            
+            c_col1, c_col2, c_col3 = st.columns([1, 1, 4])
+            with c_col1:
+                if st.button("➕ زیادکردن", key=f"inc_{p_id}"):
+                    st.session_state.cart[p_id]["qty"] += 1
+                    st.rerun()
+            with c_col2:
+                if st.button("➖ کەمکردنەوە", key=f"dec_{p_id}"):
+                    st.session_state.cart[p_id]["qty"] -= 1
+                    if st.session_state.cart[p_id]["qty"] <= 0:
+                        del st.session_state.cart[p_id]
+                    st.rerun()
+            with c_col3:
+                if st.button("❌ گەڕانەوە و لادان", key=f"remove_{p_id}"):
+                    del st.session_state.cart[p_id]
+                    st.rerun()
+                    
+        st.markdown(f"#### 💰 کۆی گشتی پارەی سەبەتە: **{total_cart_price:,} IQD**")
+        
+        # پڕکردنەوەی زانیاری موشتەری بۆ گەیاندن و ناردنی داواکاری بۆ بازرگان
+        with st.form("checkout_form"):
+            checkout_name = st.text_input("ناوی بەڕێزت بۆ تۆمارکردن:")
+            checkout_phone = st.text_input("ژمارەی مۆبایل / واتساپ بۆ پەیوەندی:")
+            submit_order = st.form_submit_button("🏁 ناردنی کۆتایی داواکاری بۆ بازرگانان")
+            
+            if submit_order:
+                if checkout_name and checkout_phone:
+                    # ناردنی داتاکان بۆ داتابەیس بۆ ئەوەی خاوەن بزنسەکان بیبینن
+                    for p_id, item in st.session_state.cart.items():
+                        detail_str = f"{item['name']} (Qty: {item['qty']})"
+                        sub_total_p = item['price'] * item['qty']
+                        cursor.execute("""
+                            INSERT INTO orders (merchant_id, customer_name, customer_phone, product_details, total_price, order_date)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (item["merchant_id"], checkout_name, checkout_phone, detail_str, sub_total_p, datetime.date.today().isoformat()))
+                    conn.commit()
+                    st.session_state.cart = {}
+                    st.success("🎉 داواکاریەکەت بە سەرکەوتوویی بۆ سەرجەم بازرگانەکان نێردرا و پاشەکەوت کرا! پێوەندی پێوە دەکەینەوە.")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error("تکایە ناونیشان و مۆبایلەکە بە تەواوی بنووسە.")
 
 # ========================================================
-# 📢 داواکردنی ڕیکلام (Ad Portal)
+# 📢 داواکردنی ڕیکلام (Ad Portal - لەگەڵ فۆڕمی ئینتەرناشناڵ)
 # ========================================================
 elif menu_choice == T["ad_portal"]:
-    st.markdown(f"<h1 style='color:#d4af37;'>{T['ad_portal']}</h1>", unsafe_allow_html=True)
-    st.write("لێرەوە داوای ڕیکلامی سپۆنسەری شاهانە بکە بۆ وێبسایتەکەت:")
+    st.markdown(f"<h1 style='color:#d4af37;'>{T['ad_title']}</h1>", unsafe_allow_html=True)
+    st.write(T["ad_intro"])
     
-    with st.form("ad_portal_form"):
-        c_name = st.text_input("ناوی بەڕێزت / ناوی کۆمپانیا:")
-        c_phone = st.text_input("ژمارەی مۆبایل:")
-        ad_text = st.text_area("دەقی ڕیکلامەکە:")
-        ad_link = st.text_input("بەستەری ڕیکلام (Facebook, Instagram, Web):")
-        duration = st.slider("ماوە بە مانگ:", 1, 12, 1)
+    with st.form("ad_portal_form_updated"):
+        c_name = st.text_input(T["fullname"])
+        b_name = st.text_input(T["bizname"])
+        c_phone = st.text_input(T["phone_whats"])
+        c_country = st.text_input(T["country"], value="Kurdistan / Iraq")
+        c_city = st.text_input(T["city"])
+        c_biz_type = st.selectbox("جۆری پیشە و بواری بزنسەکەت:", ["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare", "💼 Company / Other"])
+        c_address = st.text_input(T["address"])
+        ad_text = st.text_area(T["ad_text"])
+        ad_link = st.text_input(T["ad_link"])
+        duration = st.slider(T["ad_duration"], 1, 12, 1)
         
-        submitted_ad = st.form_submit_button("ناردنی داواکاری")
+        submitted_ad = st.form_submit_button(T["ad_submit"])
         if submitted_ad:
-            if c_name and c_phone and ad_text:
+            if c_name and b_name and c_phone and ad_text:
                 cursor.execute("""
-                    INSERT INTO ads (client_name, client_phone, ad_text, ad_link, duration_months)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (c_name, c_phone, ad_text, ad_link, duration))
+                    INSERT INTO ads (client_name, business_name, client_phone, country, city, business_type, address, ad_text, ad_link, duration_months)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (c_name, b_name, c_phone, c_country, c_city, c_biz_type, c_address, ad_text, ad_link, duration))
                 conn.commit()
-                st.success("داواکارییەکەت نێردرا! دوای پەسەندکردنی بەڕێوەبەر بڵاودەبێتەوە. 🎉")
+                st.success(T["success_ad"])
             else:
-                st.error("تکایە خانە سەرەکییەکان پڕ بکەرەوە!")
+                st.error(T["fill_fields"])
 
 # ========================================================
 # 🔑 دەروازەی ئەندامان و ئەدمین (Members and SaaS System)
@@ -484,9 +828,9 @@ elif menu_choice == T["login_btn"]:
         tab_login, tab_register = st.tabs(["🔑 چوونەژوورەوەی ئەندامان", "🏢 تۆمارکردنی بازرگانی نوێ (SaaS)"])
         
         with tab_login:
-            st.subheader("چوونەژوورەوەی بەڕێوەبەران")
-            email_val = st.text_input(T["username"]).strip().lower()
-            pass_val = st.text_input(T["password"], type="password").strip()
+            st.subheader("چوونەژوورەوەی بەڕێوەبەران یان بازرگانان")
+            email_val = st.text_input(T["username"], key="login_email").strip().lower()
+            pass_val = st.text_input(T["password"], type="password", key="login_pass").strip()
             
             if st.button(T["login_confirm"]):
                 if email_val == "admin@gmail.com" and pass_val == "admin123":
@@ -503,31 +847,47 @@ elif menu_choice == T["login_btn"]:
                         st.session_state.business_name = m_row[1]
                         st.rerun()
                     else:
-                        st.error("زانیارییەکان تەواو نین یان هەڵەن!")
+                        st.error("زانیارییەکان تەواو نین یان پاسۆرد و ئیمەیڵەکەت هەڵەیە!")
                         
         with tab_register:
-            st.subheader("بزنسەکەت لێرەوە بخە نێو جیهانی شاهانە 🚀")
-            with st.form("merchant_reg_form"):
-                b_name = st.text_input("ناوی پڕۆژە / کارەکەت:")
-                o_name = st.text_input("ناوی خاوەن کار:")
-                b_type = st.selectbox("بزنسەکەت سەر بە کام بەشەیە؟", ["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare"])
-                b_email = st.text_input("📧 ئیمەیڵی فەرمی:")
-                b_pass = st.text_input("🔑 پاسۆردی نهێنی:", type="password")
+            st.subheader(T["reg_banner"])
+            
+            # لۆجیکی نێودەوڵەتی بە ڕێگریکردن لە سووربوونی بێزارکەری خانەکان بەبێ هۆکار
+            reg_b_name = st.text_input("ناوی گشتی پڕۆژە / کارەکەت:")
+            reg_o_name = st.text_input(T["owner_name"])
+            reg_b_type = st.selectbox(T["biz_sec"], ["💇‍♂️ Barber & Salon", "📚 Education & Academy", "🛒 General Market", "💊 Pharmacy & Healthcare"])
+            reg_phone = st.text_input("ژمارەی مۆبایلی فەرمی:")
+            reg_country = st.text_input("وڵات یان هەرێم:", value="Kurdistan")
+            reg_city = st.text_input("شار یان ناوچە:")
+            reg_address = st.text_input(T["address"])
+            reg_b_email = st.text_input("📧 ئیمەیڵی فەرمی بۆ هاتنە ژوورەوە:")
+            reg_b_pass = st.text_input("🔑 پاسۆردی نهێنی نوێ:", type="password")
+            
+            # چاودێری سووربوونی خانەکان و ڕوونکردنەوەی کێشەکە بۆ بەکارهێنەر
+            errors = []
+            if not reg_b_name:
+                errors.append("ناوی پڕۆژە ناتوانرێت بەتاڵ بێت.")
+            if not reg_b_email or "@" not in reg_b_email:
+                errors.append("ئیمەیڵەکە بە تەواوی و بە هێمای @ بنووسە.")
+            if not reg_b_pass or len(reg_b_pass) < 6:
+                errors.append("پاسۆرد پێویستە لە 6 حەرف کەمتر نەبێت.")
                 
-                submitted_reg = st.form_submit_button("دروستکردنی ئەکاونتی نوێ")
-                if submitted_reg:
-                    if b_name and b_email and b_pass:
-                        try:
-                            cursor.execute("""
-                                INSERT INTO merchants (business_name, owner_name, business_type, email, password)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (b_name, o_name, b_type, b_email, b_pass))
-                            conn.commit()
-                            st.success("ئەکاونتی بازرگانیت دروستکرا! ئێستا لە بەشی لۆگین بچۆ ژوورەوە.")
-                        except sqlite3.IntegrityError:
-                            st.error("ئەم ئیمەیڵە پێشتر تۆمار کراوە!")
-                    else:
-                        st.error("تکایە هەموو خانەکان بە دروستی پڕ بکەرەوە.")
+            if errors:
+                st.markdown("<div class='error-box-custom'>❌ تکایە ئاگاداربە: " + " | ".join(errors) + "</div>", unsafe_allow_html=True)
+                
+            if st.button(T["reg_btn"]):
+                if not errors and reg_o_name and reg_phone:
+                    try:
+                        cursor.execute("""
+                            INSERT INTO merchants (business_name, owner_name, business_type, email, password, phone, country, city, address)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (reg_b_name, reg_o_name, reg_b_type, reg_b_email.strip().lower(), reg_b_pass, reg_phone, reg_country, reg_city, reg_address))
+                        conn.commit()
+                        st.success(T["reg_success"])
+                    except sqlite3.IntegrityError:
+                        st.error(T["email_exists"])
+                else:
+                    st.error("تکایە سەرجەم کێشەکانی ناو خانە سوورەکان چارەسەر بکە پێش کڕیک کردن!")
 
     else:
         # ----------------------------------------------------
@@ -551,38 +911,42 @@ elif menu_choice == T["login_btn"]:
                     
             with tab_merchants:
                 st.subheader("🏢 بازرگانە بەشداربووەکان لەگەڵمان")
-                cursor.execute("SELECT id, business_name, owner_name, business_type, email, commission_rate FROM merchants")
+                cursor.execute("SELECT id, business_name, owner_name, business_type, email, commission_rate, phone, city FROM merchants")
                 m_list = cursor.fetchall()
                 for m in m_list:
                     st.markdown(f"""
                         <div class="main-card">
                             <h4>🏢 ناوی پڕۆژە: {m[1]} ({m[3]})</h4>
-                            <p>خاوەن کار: {m[2]} | ئیمەیڵی فەرمی: {m[4]}</p>
-                            <p>ڕێژەی کۆمسیۆن: <b>%{m[5]}</b></p>
+                            <p>خاوەن کار: {m[2]} | مۆبایل: {m[6]} | شار: {m[7]}</p>
+                            <p>ئیمەیڵی فەرمی: {m[4]} | ڕێژەی کۆمسیۆن: <b>%{m[5]}</b></p>
                         </div>
                     """, unsafe_allow_html=True)
                     
             with tab_ads:
                 st.subheader("📢 داواکارییە نوێیەکانی ڕیکلام")
-                cursor.execute("SELECT id, client_name, client_phone, ad_text, ad_link, duration_months FROM ads WHERE status = 'Pending'")
+                cursor.execute("""
+                    SELECT id, client_name, business_name, client_phone, ad_text, ad_link, duration_months, city 
+                    FROM ads WHERE status = 'Pending'
+                """)
                 p_ads = cursor.fetchall()
                 if not p_ads:
                     st.info("هیچ داواکارییەکی نوێ نییە بۆ پەسەندکردن.")
                 else:
                     for ad in p_ads:
-                        st.write(f"👤 **کڕیار:** {ad[1]} ({ad[2]}) - بۆ ماوەی **{ad[5]} مانگ**")
-                        st.info(f"دەقی ڕیکلام: {ad[3]}")
+                        st.write(f"👤 **کڕیار:** {ad[1]} (کۆمپانیا: {ad[2]}) - شار: {ad[7]} | مۆبایل: {ad[3]}")
+                        st.info(f"دەقی ڕیکلام: {ad[4]}")
                         col_ap1, col_ap2 = st.columns(2)
                         with col_ap1:
                             if st.button("✅ بڵاوکردنەوەی ڕیکلام", key=f"app_{ad[0]}"):
                                 start = datetime.date.today()
-                                end = start + datetime.timedelta(days=ad[5]*30)
+                                end = start + datetime.timedelta(days=ad[6]*30)
                                 cursor.execute("UPDATE ads SET status = 'Approved', start_date = ?, end_date = ? WHERE id = ?", (start.isoformat(), end.isoformat(), ad[0]))
                                 conn.commit()
                                 st.success("ڕیکلامەکە ڕاستەوخۆ چالاک کرا!")
+                                time.sleep(0.5)
                                 st.rerun()
                         with col_ap2:
-                            if st.button("❌ سرینەوە", key=f"del_{ad[0]}"):
+                            if st.button("❌ سڕینەوە", key=f"del_{ad[0]}"):
                                 cursor.execute("DELETE FROM ads WHERE id = ?", (ad[0],))
                                 conn.commit()
                                 st.rerun()
@@ -598,10 +962,17 @@ elif menu_choice == T["login_btn"]:
             b_type = merchant_info[0]
             comm_rate = merchant_info[1]
             
-            tab_bookings, tab_staff, tab_products, tab_finance = st.tabs([T["booking_management"], T["staff_management"], T["product_management"], "💰 ژووری دارایی"])
+            tab_bookings, tab_staff, tab_products, tab_orders, tab_finance, tab_customers = st.tabs([
+                T["booking_management"], 
+                T["staff_management"], 
+                T["product_management"], 
+                "📦 داواکارییەکانی کڕین",
+                T["finance_tab"], 
+                "👥 کڕیارە دایمییەکان"
+            ])
             
             with tab_bookings:
-                if "Barber" in b_type or "Pharmacy" in b_type:
+                if "Barber" in b_type or "Pharmacy" in b_type or "General Market" in b_type:
                     st.subheader("📅 خشتەی کار و کاتی نۆرەکانی دەستی کڕیارانت")
                     cursor.execute("""
                         SELECT b.id, b.customer_name, b.customer_phone, s.staff_name, b.booking_date, b.booking_time, b.status 
@@ -625,6 +996,8 @@ elif menu_choice == T["login_btn"]:
                                 if st.button("✅ پشتڕاستکردنەوەی نۆرە", key=f"conf_b_{b[0]}"):
                                     cursor.execute("UPDATE bookings SET status = 'Confirmed' WHERE id = ?", (b[0],))
                                     conn.commit()
+                                    st.success("نۆرەکە پەسەندکرا!")
+                                    time.sleep(0.5)
                                     st.rerun()
                                     
                 elif "Education" in b_type:
@@ -650,18 +1023,21 @@ elif menu_choice == T["login_btn"]:
                                 if st.button("✅ پەسەندکردنی وەک خوێندکار", key=f"conf_stu_{s[0]}"):
                                     cursor.execute("UPDATE bookings SET status = 'Active Student' WHERE id = ?", (s[0],))
                                     conn.commit()
+                                    st.success("قوتابیەکە بە سەرکەوتوویی وەرگیرا!")
+                                    time.sleep(0.5)
                                     st.rerun()
 
             with tab_staff:
                 st.subheader("👥 کارمەندی نوێ زیاد بکە:")
                 with st.form("add_staff_form"):
                     s_name = st.text_input("ناوی کارمەند:")
-                    s_role = st.text_input("ناونیشان یان پیشە:")
-                    sub_staff = st.form_submit_button("تۆمارکردن")
+                    s_role = st.text_input("ناونیشان یان پیشەی کارمەندەکەت:")
+                    sub_staff = st.form_submit_button("تۆمارکردنی کارمەند")
                     if sub_staff and s_name:
                         cursor.execute("INSERT INTO staff (merchant_id, staff_name, role) VALUES (?, ?, ?)", (st.session_state.user_id, s_name, s_role))
                         conn.commit()
                         st.success("کارمەندەکە زیادکرا!")
+                        time.sleep(0.5)
                         st.rerun()
                         
                 st.write("---")
@@ -672,37 +1048,93 @@ elif menu_choice == T["login_btn"]:
                     st.write(f"👤 **{s[0]}** - {s[1]}")
 
             with tab_products:
-                st.subheader("📦 کاڵاکانت لێرە زیاد بکە بۆ ئەوەی بخرێتە بازارەوە:")
+                st.subheader("📦 کاڵاکانت لێرە زیاد بکە بۆ ئەوەی بخرێتە بازاڕەوە:")
                 with st.form("add_product_form"):
-                    p_name = st.text_input("ناوی بەرهەم:")
+                    p_name = st.text_input("ناوی بەرهەم یان کتێب:")
                     p_price = st.number_input("نرخ بە دینار:", min_value=0)
-                    p_desc = st.text_area("ڕوونکردنەوەی بەرهەم:")
-                    p_img = st.text_input("بەستەری وێنە (Image Link):", "https://images.unsplash.com/photo-1527799863-17b075e32712")
+                    p_desc = st.text_area("ڕوونکردنەوەی گشتی:")
+                    p_img = st.text_input("بەستەری وێنە (Image Link) - بۆ پیشاندان لە بازاڕ:", "https://images.unsplash.com/photo-1527799863-17b075e32712")
                     sub_p = st.form_submit_button("پاشەکەوتکردن")
                     if sub_p and p_name:
                         cursor.execute("INSERT INTO products (merchant_id, name, price, description, img_url) VALUES (?, ?, ?, ?, ?)",
                                        (st.session_state.user_id, p_name, p_price, p_desc, p_img))
                         conn.commit()
-                        st.success("بەرهەمەکەت زیادکرا و ئێستا لە بەشی بازاردا دەبینرێت!")
+                        st.success("بەرهەم یان کتێبەکەت زیادکرا و ئێستا لە بەشی بازاڕدا دەبینرێت!")
+                        time.sleep(0.5)
                         st.rerun()
 
+            with tab_orders:
+                st.subheader("📦 داواکارییە کڕاوەکانی کڕیاران")
+                cursor.execute("SELECT id, customer_name, customer_phone, product_details, total_price, order_date, status FROM orders WHERE merchant_id = ?", (st.session_state.user_id,))
+                order_list = cursor.fetchall()
+                if not order_list:
+                    st.info("هیچ داواکارییەکی نوێی کڕینی بەرهەم لای تۆ نییە لە ئێستادا.")
+                else:
+                    for ord in order_list:
+                        st.markdown(f"""
+                            <div class="main-card">
+                                <h4>👤 کڕیار: {ord[1]} ({ord[2]})</h4>
+                                <p>بەرهەم: <b>{ord[3]}</b> | کۆی گشتی: {ord[4]:,} IQD</p>
+                                <p>بەروار: {ord[5]} | دۆخی گەیاندن: <b>{ord[6]}</b></p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                        if ord[6] == 'Pending':
+                            if st.button("✅ ناردنی کاڵا و تەواوکردن", key=f"ship_{ord[0]}"):
+                                cursor.execute("UPDATE orders SET status = 'Shipped' WHERE id = ?", (ord[0],))
+                                conn.commit()
+                                st.success("دۆخی داواکارییەکە نوێکرایەوە!")
+                                time.sleep(0.5)
+                                st.rerun()
+
             with tab_finance:
-                st.subheader("💰 حیساباتی سەرتاشەکان و دابەشبوونی داهات")
+                st.subheader("💰 حیساباتی دارایی داهات بەپێی پیشە")
+                
+                # لۆجیکی جیاوازی دارایی بەپێی جۆری کار بۆ سڕینەوەی کێشەی سەرتاش لە هەموو بەشەکان
                 if "Barber" in b_type:
-                    st.write("داهاتی کۆی دەلاکەکان و کۆمسیۆنی پلاتفۆرم بەپێی نۆرە پشتڕاستکراوەکان:")
+                    st.write("داهاتی کۆی دەلاکەکان و کۆمسیۆنی پلاتفۆڕم بەپێی نۆرە پشتڕاستکراوەکان:")
                     cursor.execute("SELECT COUNT(id) FROM bookings WHERE merchant_id = ? AND status = 'Confirmed'", (st.session_state.user_id,))
                     confirmed_count = cursor.fetchone()[0] or 0
-                    
                     total_revenue = confirmed_count * 10000
-                    platform_share = total_revenue * (comm_rate / 100.0)
-                    staff_and_shop_share = total_revenue - platform_share
-                    
-                    col_f1, col_f2, col_f3 = st.columns(3)
-                    with col_f1:
-                        st.metric("کۆی داهاتی گشتی", f"{total_revenue:,} IQD")
-                    with col_f2:
-                        st.metric(f"پشکی سەنتەر (%{comm_rate})", f"{platform_share:,} IQD")
-                    with col_f3:
-                        st.metric("پشکی ماوەی کارمەندان", f"{staff_and_shop_share:,} IQD")
+                elif "Education" in b_type:
+                    st.write("داهاتی پەیمانگا بەپێی خوێندکارە چالاکەکان:")
+                    cursor.execute("SELECT COUNT(id) FROM bookings WHERE merchant_id = ? AND status = 'Active Student'", (st.session_state.user_id,))
+                    confirmed_count = cursor.fetchone()[0] or 0
+                    total_revenue = confirmed_count * 150000  # نرخی وێنەکراوی کۆرسی زمان
                 else:
-                    st.info("تەنها بۆ جۆری پیشەی Barber حیساباتی ئۆتۆماتیکی داهات کار دەکات.")
+                    # بۆ دەرمانخانەکان یان مارکێتەکان ژووری دارایی گرێدراوە بە فرۆشتنی بەرهەمەکان
+                    cursor.execute("SELECT SUM(total_price) FROM orders WHERE merchant_id = ? AND status = 'Shipped'", (st.session_state.user_id,))
+                    total_revenue = cursor.fetchone()[0] or 0
+                
+                platform_share = total_revenue * (comm_rate / 100.0)
+                staff_and_shop_share = total_revenue - platform_share
+                
+                col_f1, col_f2, col_f3 = st.columns(3)
+                with col_f1:
+                    st.metric("کۆی داهاتی گشتی کارەکان", f"{total_revenue:,} IQD")
+                with col_f2:
+                    st.metric(f"پشکی پلاتفۆڕم (%{comm_rate})", f"{platform_share:,} IQD")
+                with col_f3:
+                    st.metric("پشکی ماوەی سەنتەرەکە", f"{staff_and_shop_share:,} IQD")
+
+            with tab_customers:
+                st.subheader("👥 چاودێری کڕیارە دایمییەکان و فیدباک")
+                st.write("لێرەوە دەتوانیت کڕیارە هەرە چالاکەکانت ببینی بۆ کردنی داشکاندنی بەردەوام:")
+                
+                # دەرهێنانی داتای سەردانی کڕیارەکان
+                cursor.execute("""
+                    SELECT customer_name, customer_phone, COUNT(id) as visit_count 
+                    FROM bookings WHERE merchant_id = ? 
+                    GROUP BY customer_phone ORDER BY visit_count DESC
+                """, (st.session_state.user_id,))
+                cust_data = cursor.fetchall()
+                
+                if not cust_data:
+                    st.info("تائێستا مێژووی سەردانی کڕیاران لێرە تۆمار نەکراوە.")
+                else:
+                    for c_row in cust_data:
+                        st.markdown(f"""
+                            <div class="main-card">
+                                <b>👤 ناو: {c_row[0]}</b> | مۆبایل: {c_row[1]} <br/>
+                                🔄 ژمارەی سەردانەکان: <span style="color:#d4af37; font-weight:bold;">{c_row[2]} جار</span>
+                            </div>
+                        """, unsafe_allow_html=True)
