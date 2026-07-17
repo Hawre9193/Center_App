@@ -15,10 +15,27 @@ def inject_royal_styles():
             background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
             color: #e2e8f0 !important;
         }
+        /* لێرەوە چاکسازی بۆ مێنوو و ڕێکخستنی Sidebar کراوە */
         [data-testid="stSidebar"] {
             background-color: #07080c !important;
             border-right: 2px solid rgba(212, 175, 55, 0.3) !important;
+            direction: rtl !important;
         }
+        [data-testid="stSidebarUserContent"] {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+        [data-testid="stSidebar"] * {
+            text-align: right !important;
+        }
+        /* چاککردنی دوگمەی سێ هێڵی مێنوو کە دیار نەمابوو */
+        [data-testid="stSidebarCollapsedControl"] {
+            color: #d4af37 !important;
+            background-color: rgba(22, 24, 34, 0.8) !important;
+            border-radius: 8px !important;
+            padding: 4px !important;
+        }
+        /* کۆتایی چاکسازی مێنوو */
         .royal-header {
             text-align: center;
             padding: 30px;
