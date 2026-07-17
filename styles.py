@@ -2,7 +2,7 @@ import streamlit as st
 
 def inject_royal_styles():
     """
-    ئەم ف ikشنە دیزاینی تاریکی زێڕینی شاهانەی CSS دەخاتە ناو لاپەڕەکەوە.
+    ئەم فنکشنە دیزاینی تاریکی زێڕینی شاهانەی CSS دەخاتە ناو لاپەڕەکەوە.
     """
     st.markdown("""
         <style>
@@ -15,34 +15,34 @@ def inject_royal_styles():
             background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
             color: #e2e8f0 !important;
         }
-        /* لێرەوە چاکسازی گشتگیر بۆ ڕاست-بۆ-چەپ و زۆرکردنی مۆدی تاریک کراوە */
+        /* چاکسازی تایبەت بۆ وەشانی v1.59.2 و مۆدی تاریک */
         :root {
             --primary-color: #d4af37 !important;
             --background-color: #050508 !important;
             --secondary-background-color: #07080c !important;
             --text-color: #e2e8f0 !important;
         }
-        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"], [data-testid="stAppViewContainer"] {
+        /* ڕێکخستنی ئاراستەی گشتی لاپەڕە و مێنوو بە RTL */
+        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"], .main {
             direction: rtl !important;
             text-align: right !important;
-            background-color: #050508 !important;
+        }
+        /* چاککردنی تێکەڵبوونی مێنووی سەرەوە لە وەشانی کۆندا */
+        header, [data-testid="stHeader"] {
+            background-color: rgba(5, 5, 8, 0.9) !important;
+            direction: rtl !important;
+        }
+        /* شاردنەوەی ئەو نووسینە بەتەواوی لە وەشانی کۆندا */
+        [class*="sidebarCollapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button {
+            color: #d4af37 !important;
+            overflow: hidden !important;
+            width: 40px !important;
         }
         /* دوورخستنەوەی نووسینەکان لە بازنە ڕەنگاوڕەنگەکان لە مێنوودا */
         [data-testid="stWidgetLabel"] p, .stRadio label {
             text-align: right !important;
             padding-right: 10px !important;
         }
-        /* شاردنەوەی ئەو نووسینە تێکچووەی سەرەوەی مێنوو و هێشتنەوەی ئایکۆنەکە */
-        [data-testid="stSidebarCollapsedControl"] button span {
-            display: none !important;
-        }
-        [data-testid="stSidebarCollapsedControl"] button::before {
-            content: "☰" !important;
-            color: #d4af37 !important;
-            font-size: 24px !important;
-            padding: 5px !important;
-        }
-        /* کۆتایی چاکسازی مێنوو */
         .royal-header {
             text-align: center;
             padding: 30px;
