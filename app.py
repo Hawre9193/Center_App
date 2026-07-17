@@ -178,4 +178,4 @@ elif menu_choice == T["login_btn"]:
         # 🏢 ب: پانێڵی تایبەتی بازرگانەکان (MERCHANT DASHBOARD)
         # ----------------------------------------------------
         elif st.session_state.user_role == "merchant":
-            render_merchant_panel(T) . 
+            render_merchant_panel(T)
