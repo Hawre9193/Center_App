@@ -15,10 +15,17 @@ def inject_royal_styles():
             background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
             color: #e2e8f0 !important;
         }
-        /* لێرەوە چاکسازی گشتگیر بۆ ڕاست-بۆ-چەپ و مێنوو کراوە */
-        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"] {
+        /* لێرەوە چاکسازی گشتگیر بۆ ڕاست-بۆ-چەپ و زۆرکردنی مۆدی تاریک کراوە */
+        :root {
+            --primary-color: #d4af37 !important;
+            --background-color: #050508 !important;
+            --secondary-background-color: #07080c !important;
+            --text-color: #e2e8f0 !important;
+        }
+        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"], [data-testid="stAppViewContainer"] {
             direction: rtl !important;
             text-align: right !important;
+            background-color: #050508 !important;
         }
         /* دوورخستنەوەی نووسینەکان لە بازنە ڕەنگاوڕەنگەکان لە مێنوودا */
         [data-testid="stWidgetLabel"] p, .stRadio label {
