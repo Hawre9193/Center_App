@@ -44,7 +44,7 @@ LANG_DICT = {
         "reg_banner": "بزنسەکەت لێرەوە تۆمار بکە بۆ ئەوەی زیاتر بەناوبانگ بیت لە وێبسایتی جیهانی شاهانە 🚀",
         "reg_btn": "تۆمارکردنی بزنسی نوێ",
         "owner_name": "ناوی تەواوی خاوەن کار:",
-        "biz_sec": "بزنسەکەت سەر بە کام بەشەیە؟",
+        "biz_sec": "بزنسەکەت سەر بە کام بەشەیە？",
         "country": "وڵات:",
         "city": "شار:",
         "address": "ناونیشانی فیزیکی ورد:",
@@ -250,7 +250,7 @@ LANG_DICT = {
 # ========================================================
 def inject_royal_styles():
     """
-    ئەم فنکشنە دیزاینی تاریکی زێڕینی شاهانەی CSS دەخاتە ناو لاپەڕەکەوە.
+    ئەم فنکشنە دیزاینی تاریکی زێڕینی شاهانەی CSS دەخاتە ناو لاپەڕەکەوە بە ڕێکخستنی دروستی مێنوو.
     """
     st.markdown("""
         <style>
@@ -263,33 +263,29 @@ def inject_royal_styles():
             background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
             color: #e2e8f0 !important;
         }
-        /* چاکسازی تایبەت بۆ وەشانی v1.59.2 و مۆدی تاریک */
         :root {
             --primary-color: #d4af37 !important;
             --background-color: #050508 !important;
             --secondary-background-color: #07080c !important;
             --text-color: #e2e8f0 !important;
         }
-        /* ڕێکخستنی ئاراستەی گشتی لاپەڕە و مێنوو بە RTL */
-        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"], .main {
+        /* تەنها بەشی سەرەکی ماڵپەڕەکە بکە بە ڕاست بۆ چەپ، نەک مێنووی لا تەنیشت */
+        .main .block-container {
             direction: rtl !important;
             text-align: right !important;
         }
-        /* چاککردنی تێکەڵبوونی مێنووی سەرەوە لە وەشانی کۆندا */
+        /* ڕێکخستنی مێنووی لای تەنیشت بۆ ئەوەی تێکەڵ بە ناوەڕاست نەبێت */
+        [data-testid="stSidebar"] {
+            direction: rtl !important;
+            background-color: #07080c !important;
+            border-left: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        [data-testid="stSidebarUserContent"] {
+            direction: rtl !important;
+            text-align: right !important;
+        }
         header, [data-testid="stHeader"] {
             background-color: rgba(5, 5, 8, 0.9) !important;
-            direction: rtl !important;
-        }
-        /* شاردنەوەی ئەو نووسینە بەتەواوی لە وەشانی کۆندا */
-        [class*="sidebarCollapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button {
-            color: #d4af37 !important;
-            overflow: hidden !important;
-            width: 40px !important;
-        }
-        /* دوورخستنەوەی نووسینەکان لە بازنە ڕەنگاوڕەنگەکان لە مێنوودا */
-        [data-testid="stWidgetLabel"] p, .stRadio label {
-            text-align: right !important;
-            padding-right: 10px !important;
         }
         .royal-header {
             text-align: center;
@@ -318,6 +314,8 @@ def inject_royal_styles():
             padding: 22px !important;
             margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            direction: rtl !important;
+            text-align: right !important;
         }
         .product-box {
             background: rgba(255, 255, 255, 0.02) !important;
@@ -352,6 +350,8 @@ def inject_royal_styles():
             border-left: 4px solid #ff4b4b;
             margin-top: 5px;
             font-size: 13px;
+            direction: rtl !important;
+            text-align: right !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -1022,11 +1022,10 @@ if "logged_in" not in st.session_state:
     st.session_state.user_id = None
     st.session_state.business_name = None
 if "cart" not in st.session_state:
-    st.session_state.cart = {}  # {product_id: {"name": name, "price": price, "qty": qty, "merchant_id": m_id}}
+    st.session_state.cart = {}
 
 T = LANG_DICT[st.session_state.lang]
 
-# ☰ مینیۆی لای تەنیشت بە شێوازی سێ هێڵەکان (Sidebar Menu ☰)
 st.sidebar.markdown("<h2 style='color:#d4af37; text-align:center;'>☰ ROYAL CORE</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align:center; font-size:11px; color:#8892b0;'>ENTERPRISE MULTI-TENANT SYSTEM</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
@@ -1070,19 +1069,15 @@ st.sidebar.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 🏠 لاپەڕەی سەرەکی (Home Page)
 if menu_choice == T["home"]:
     render_home_page(T, biz_type)
 
-# 🛍️ بەشی بازار و کەرەستەکان (Shop View)
 elif menu_choice == T["shop"]:
     render_shop_page(T, biz_type)
 
-# 📢 داواکردنی ڕیکلام (Ad Portal)
 elif menu_choice == T["ad_portal"]:
     render_ad_portal(T)
 
-# 🔑 دەروازەی ئەندامان و ئەدمین (Members and SaaS System)
 elif menu_choice == T["login_btn"]:
     if not st.session_state.logged_in:
         tab_login, tab_register = st.tabs(["🔑 چوونەژوورەوەی ئەندامان", "🏢 تۆمارکردنی بازرگانی نوێ (SaaS)"])
