@@ -526,9 +526,9 @@ def upload_product_image():
     uploaded_file = st.file_uploader("وێنەی بەرهەم هەڵبژێرە", type=['jpg', 'png', 'jpeg'])
     if uploaded_file is not None:
         st.success("وێنەکە بە سەرکەوتوویی بارکرا!") 
-with tab_products:
+#with tab_products:
         # لێرە بانگهێشتی فەنکشنەکە دەکەین بۆ ئەوەی وێنەکان پیشان بدات
-        render_product_gallery(merchant_id) 
+        #render_product_gallery(merchant_id) 
 # ========================================================
 # 12. سیستەمی هەڵسەنگاندن و ئەستێرەکان (Rating & Review)
 # ========================================================
