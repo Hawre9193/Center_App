@@ -15,25 +15,25 @@ def inject_royal_styles():
             background: radial-gradient(circle, #0e0f14 0%, #050508 100%) !important;
             color: #e2e8f0 !important;
         }
-        /* لێرەوە چاکسازی بۆ مێنوو و ڕێکخستنی Sidebar کراوە */
-        [data-testid="stSidebar"] {
-            background-color: #07080c !important;
-            border-right: 2px solid rgba(212, 175, 55, 0.3) !important;
-            direction: rtl !important;
-        }
-        [data-testid="stSidebarUserContent"] {
+        /* لێرەوە چاکسازی گشتگیر بۆ ڕاست-بۆ-چەپ و مێنوو کراوە */
+        .stApp, [data-testid="stSidebar"], [data-testid="stSidebarUserContent"] {
             direction: rtl !important;
             text-align: right !important;
         }
-        [data-testid="stSidebar"] * {
+        /* دوورخستنەوەی نووسینەکان لە بازنە ڕەنگاوڕەنگەکان لە مێنوودا */
+        [data-testid="stWidgetLabel"] p, .stRadio label {
             text-align: right !important;
+            padding-right: 10px !important;
         }
-        /* چاککردنی دوگمەی سێ هێڵی مێنوو کە دیار نەمابوو */
-        [data-testid="stSidebarCollapsedControl"] {
+        /* شاردنەوەی ئەو نووسینە تێکچووەی سەرەوەی مێنوو و هێشتنەوەی ئایکۆنەکە */
+        [data-testid="stSidebarCollapsedControl"] button span {
+            display: none !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] button::before {
+            content: "☰" !important;
             color: #d4af37 !important;
-            background-color: rgba(22, 24, 34, 0.8) !important;
-            border-radius: 8px !important;
-            padding: 4px !important;
+            font-size: 24px !important;
+            padding: 5px !important;
         }
         /* کۆتایی چاکسازی مێنوو */
         .royal-header {
